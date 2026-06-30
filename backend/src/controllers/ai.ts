@@ -1,0 +1,78 @@
+import { Response } from 'express';
+import Groq from 'groq-sdk';
+import { supabase } from '../lib/supabase';
+import { AuthRequest } from '../middleware/auth';
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY!,
+});
+
+export const generateRecipe = async (req: AuthRequest, res: Response) => {
+  const { message } = req.body;
+
+  const { data: pantryItems } = await supabase
+    .from('pantry_items')
+    .select('name, quantity, unit')
+    .eq('user_id', req.user!.id);
+
+  const pantryList = pantryItems?.map(i =>
+    `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ''}`
+  ).join(', ') || 'empty';
+
+  const systemPrompt = `You are Recope's AI recipe assistant. You help users generate delicious recipes.
+
+The user's pantry currently contains: ${pantryList}
+
+You can generate ANY recipe the user asks for, whether or not they have the ingredients. 
+- If they ask for a recipe using their pantry ingredients, prioritize those.
+- If they ask for any other recipe, generate it freely.
+- If they ask "what can I make with my pantry?", suggest recipes using their pantry items.
+- Always be helpful, creative and encouraging.
+
+When generating a recipe, ALWAYS respond with a JSON object in this exact format with no markdown or code blocks, just raw JSON:
+{
+  "type": "recipe",
+  "title": "Recipe Name",
+  "description": "Brief description",
+  "prep_time": 10,
+  "cook_time": 20,
+  "servings": 4,
+  "ingredients": [
+    { "name": "ingredient", "amount": "2", "unit": "cups" }
+  ],
+  "steps": [
+    { "instruction": "Step description" }
+  ],
+  "message": "A friendly message about the recipe"
+}
+
+If the user is just chatting or asking a question (not requesting a recipe), respond with:
+{
+  "type": "message",
+  "message": "Your response here"
+}
+
+Always return raw JSON only, no markdown, no code blocks.`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message },
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
+    });
+
+    const text = completion.choices[0]?.message?.content || '';
+    console.log('Groq response:', text);
+
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    res.json(parsed);
+  } catch (error: any) {
+    console.error('Groq error:', error.message);
+    res.json({ type: 'message', message: 'Sorry, I had trouble generating a recipe. Please try again!' });
+  }
+};
