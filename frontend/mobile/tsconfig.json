@@ -1,14 +1,6 @@
 {
-<<<<<<< HEAD
   "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": true
   }
 }
-=======
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "strict": true
-  }
-}
->>>>>>> a6b5b6027d73e130f935979dc76fc69a5ed59d9d

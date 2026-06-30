@@ -262,8 +262,4 @@ export const cookRecipe = async (req: AuthRequest, res: Response) => {
   res.json({
     message: 'Recipe cooked successfully. Pantry updated.',
   });
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> a6b5b6027d73e130f935979dc76fc69a5ed59d9d

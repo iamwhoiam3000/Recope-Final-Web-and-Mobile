@@ -14,11 +14,7 @@
     "@react-navigation/bottom-tabs": "^7.15.10",
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/native-stack": "^7.14.12",
-<<<<<<< HEAD
-    "@supabase/supabase-js": "^2.110.0",
-=======
     "@supabase/supabase-js": "^2.105.1",
->>>>>>> a6b5b6027d73e130f935979dc76fc69a5ed59d9d
     "expo": "~54.0.33",
     "expo-image-picker": "~17.0.11",
     "expo-secure-store": "~15.0.8",

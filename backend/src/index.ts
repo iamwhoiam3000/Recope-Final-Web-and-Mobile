@@ -32,8 +32,4 @@ app.use('/api/reviews', reviewRoutes);
 
 app.listen(PORT, () => {
   console.log(`Recope backend running on http://localhost:${PORT}`);
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> a6b5b6027d73e130f935979dc76fc69a5ed59d9d
