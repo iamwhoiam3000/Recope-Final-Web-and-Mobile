@@ -259,3 +259,59 @@ export const cookRecipe = async (req: AuthRequest, res: Response) => {
     message: 'Recipe cooked successfully. Pantry updated.'
   });
 };
+export const cookRecipe = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  // 1. Get recipe ingredients
+  const { data: ingredients, error: ingError } = await supabase
+    .from('ingredients')
+    .select('*')
+    .eq('recipe_id', id);
+
+  if (ingError) return res.status(500).json({ error: ingError.message });
+  if (!ingredients || ingredients.length === 0) {
+    return res.status(400).json({ error: 'No ingredients found for this recipe' });
+  }
+
+  // 2. Get user's pantry
+  const { data: pantry, error: pantryError } = await supabase
+    .from('pantry_items')
+    .select('*')
+    .eq('user_id', req.user!.id);
+
+  if (pantryError) return res.status(500).json({ error: pantryError.message });
+
+  // 3. Check & deduct ingredients
+  for (const ingredient of ingredients) {
+    const pantryItem = pantry.find(
+      (p) => p.name.toLowerCase() === ingredient.name.toLowerCase()
+    );
+
+    if (!pantryItem) {
+      return res.status(400).json({
+        error: `Missing ingredient: ${ingredient.name}`,
+      });
+    }
+
+    if (pantryItem.quantity < ingredient.quantity) {
+      return res.status(400).json({
+        error: `Not enough ${ingredient.name}`,
+      });
+    }
+
+    const { error: updateError } = await supabase
+      .from('pantry_items')
+      .update({
+        quantity: pantryItem.quantity - ingredient.quantity,
+      })
+      .eq('id', pantryItem.id);
+
+    if (updateError) {
+      return res.status(500).json({ error: updateError.message });
+    }
+  }
+
+  res.json({
+    message: 'Recipe cooked successfully. Pantry updated.',
+  });
+};
