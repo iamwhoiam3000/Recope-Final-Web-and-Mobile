@@ -101,7 +101,7 @@ export default function RecipeDetail() {
       }
 
       alert(data.message || "Recipe cooked successfully!");
-      window.location.reload();
+      navigate("/pantry");
     } catch (err) {
       console.error(err);
       alert("Something went wrong while cooking recipe");
