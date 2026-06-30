@@ -1,35 +1,265 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import recipeRoutes from './routes/recipes';
-import profileRoutes from './routes/profile';
-import pantryRoutes from './routes/pantry';
-import aiRoutes from './routes/ai';
-import chatRoutes from './routes/chat';
-import adminRoutes from './routes/admin';
-import reviewRoutes from './routes/reviews';
+import { Response } from 'express';
+import { supabase } from '../lib/supabase';
+import { AuthRequest } from '../middleware/auth';
 
-dotenv.config();
+// =========================
+// GET ALL RECIPES
+// =========================
+export const getRecipes = async (req: AuthRequest, res: Response) => {
+  const { sort } = req.query;
+  const orderColumn = sort === 'popular' ? 'view_count' : 'created_at';
 
-const app = express();
-const PORT = process.env.PORT || 4000;
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*, profiles(username, first_name, last_name, avatar_url)')
+    .eq('is_public', true)
+    .order(orderColumn, { ascending: false });
 
-app.use(cors());
-app.use(express.json());
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+};
 
-app.get('/health', (_, res) => {
-  res.json({ status: 'ok', app: 'recope' });
-});
+// =========================
+// GET SINGLE RECIPE
+// =========================
+export const getRecipe = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
 
-app.use('/api/recipes', recipeRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/pantry', pantryRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/reviews', reviewRoutes);
+  const { data: recipe, error } = await supabase
+    .from('recipes')
+    .select('*, profiles(username, first_name, last_name, avatar_url)')
+    .eq('id', id)
+    .single();
 
+  if (error) return res.status(404).json({ error: 'Recipe not found' });
 
-app.listen(PORT, () => {
-  console.log(`Recope backend running on http://localhost:${PORT}`);
-});
+  const { data: ingredients } = await supabase
+    .from('ingredients')
+    .select('*')
+    .eq('recipe_id', id);
+
+  const { data: steps } = await supabase
+    .from('steps')
+    .select('*')
+    .eq('recipe_id', id)
+    .order('step_number');
+
+  await supabase.rpc('increment_view_count', { recipe_id: id });
+
+  res.json({ ...recipe, ingredients, steps });
+};
+
+// =========================
+// CREATE RECIPE
+// =========================
+export const createRecipe = async (req: AuthRequest, res: Response) => {
+  const {
+    title,
+    description,
+    prep_time,
+    cook_time,
+    servings,
+    image_url,
+    meal_type,
+    cuisine_type,
+    cook_duration,
+    ingredients,
+    steps,
+  } = req.body;
+
+  const { data: recipe, error } = await supabase
+    .from('recipes')
+    .insert({
+      title,
+      description,
+      prep_time,
+      cook_time,
+      servings,
+      image_url,
+      meal_type,
+      cuisine_type,
+      cook_duration,
+      user_id: req.user!.id,
+    })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  if (ingredients?.length) {
+    await supabase.from('ingredients').insert(
+      ingredients.map((i: any) => ({
+        ...i,
+        recipe_id: recipe.id,
+      }))
+    );
+  }
+
+  if (steps?.length) {
+    await supabase.from('steps').insert(
+      steps.map((s: any, index: number) => ({
+        recipe_id: recipe.id,
+        step_number: index + 1,
+        instruction: s.instruction,
+      }))
+    );
+  }
+
+  res.status(201).json(recipe);
+};
+
+// =========================
+// UPDATE RECIPE
+// =========================
+export const updateRecipe = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  const {
+    title,
+    description,
+    prep_time,
+    cook_time,
+    servings,
+    image_url,
+    meal_type,
+    cuisine_type,
+    cook_duration,
+    ingredients,
+    steps,
+  } = req.body;
+
+  const { data, error } = await supabase
+    .from('recipes')
+    .update({
+      title,
+      description,
+      prep_time,
+      cook_time,
+      servings,
+      image_url,
+      meal_type,
+      cuisine_type,
+      cook_duration,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('user_id', req.user!.id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data || data.length === 0)
+    return res.status(403).json({ error: 'Not authorized or recipe not found' });
+
+  await supabase.from('ingredients').delete().eq('recipe_id', id);
+  await supabase.from('steps').delete().eq('recipe_id', id);
+
+  if (ingredients?.length) {
+    await supabase.from('ingredients').insert(
+      ingredients.map((i: any) => ({
+        ...i,
+        recipe_id: id,
+      }))
+    );
+  }
+
+  if (steps?.length) {
+    await supabase.from('steps').insert(
+      steps.map((s: any, index: number) => ({
+        recipe_id: id,
+        step_number: index + 1,
+        instruction: s.instruction,
+      }))
+    );
+  }
+
+  res.json({ message: 'Recipe updated' });
+};
+
+// =========================
+// DELETE RECIPE
+// =========================
+export const deleteRecipe = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  const { error } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', req.user!.id);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ message: 'Recipe deleted' });
+};
+
+// =========================
+// GET MY RECIPES
+// =========================
+export const getMyRecipes = async (req: AuthRequest, res: Response) => {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('user_id', req.user!.id)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json(data);
+};
+
+// =========================
+// COOK RECIPE (PANTRY DEDUCTION)
+// =========================
+export const cookRecipe = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  const { data: ingredients, error: ingError } = await supabase
+    .from('ingredients')
+    .select('*')
+    .eq('recipe_id', id);
+
+  if (ingError) return res.status(500).json({ error: ingError.message });
+
+  if (!ingredients?.length) {
+    return res.status(400).json({ error: 'No ingredients found for this recipe' });
+  }
+
+  const { data: pantry, error: pantryError } = await supabase
+    .from('pantry_items')
+    .select('*')
+    .eq('user_id', req.user!.id);
+
+  if (pantryError) return res.status(500).json({ error: pantryError.message });
+
+  for (const ingredient of ingredients) {
+    const pantryItem = pantry.find(
+      (p) =>
+        p.name.toLowerCase().trim() === ingredient.name.toLowerCase().trim()
+    );
+
+    if (!pantryItem) {
+      return res.status(400).json({
+        error: `Missing ingredient: ${ingredient.name}`,
+      });
+    }
+
+    if (pantryItem.quantity < ingredient.quantity) {
+      return res.status(400).json({
+        error: `Not enough ${ingredient.name}`,
+      });
+    }
+
+    const { error: updateError } = await supabase
+      .from('pantry_items')
+      .update({
+        quantity: pantryItem.quantity - ingredient.quantity,
+      })
+      .eq('id', pantryItem.id);
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+  }
+
+  res.json({
+    message: 'Recipe cooked successfully. Pantry updated.',
+  });
+};
