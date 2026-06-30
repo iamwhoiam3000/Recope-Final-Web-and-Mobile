@@ -1,106 +1,203 @@
--- Users profile table (extends Supabase auth)
-create table profiles (
-  id uuid references auth.users on delete cascade primary key,
-  username text unique not null,
-  full_name text,
-  avatar_url text,
-  created_at timestamp with time zone default timezone('utc', now())
+-- ===========================
+-- REQUIRED EXTENSIONS
+-- ===========================
+create extension if not exists "pgcrypto";
+
+-- ===========================
+-- PROFILES
+-- ===========================
+alter table profiles
+add column if not exists first_name text,
+add column if not exists last_name text;
+
+-- ===========================
+-- RECIPES
+-- ===========================
+alter table recipes
+add column if not exists meal_type text,
+add column if not exists cuisine_type text,
+add column if not exists cook_duration text,
+add column if not exists view_count integer default 0;
+
+-- ===========================
+-- PANTRY ITEMS
+-- ===========================
+create table if not exists pantry_items (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references profiles(id) on delete cascade,
+    name text not null,
+    quantity numeric default 0,
+    unit text,
+    created_at timestamptz default now()
 );
 
--- Recipes table
-create table recipes (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references profiles(id) on delete cascade not null,
-  title text not null,
-  description text,
-  image_url text,
-  prep_time integer,
-  cook_time integer,
-  servings integer,
-  is_public boolean default true,
-  created_at timestamp with time zone default timezone('utc', now()),
-  updated_at timestamp with time zone default timezone('utc', now())
+-- ===========================
+-- REVIEWS
+-- ===========================
+create table if not exists reviews (
+    id uuid primary key default gen_random_uuid(),
+    recipe_id uuid not null references recipes(id) on delete cascade,
+    user_id uuid not null references profiles(id) on delete cascade,
+    rating integer not null check (rating between 1 and 5),
+    comment text,
+    difficulty text,
+    is_good boolean,
+    created_at timestamptz default now()
 );
 
--- Ingredients table
-create table ingredients (
-  id uuid default gen_random_uuid() primary key,
-  recipe_id uuid references recipes(id) on delete cascade not null,
-  name text not null,
-  amount text,
-  unit text
+-- ===========================
+-- CHAT MESSAGES
+-- ===========================
+create table if not exists chat_messages (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references profiles(id) on delete cascade,
+    role text not null,
+    content text not null,
+    recipe jsonb,
+    created_at timestamptz default now()
 );
 
--- Steps table
-create table steps (
-  id uuid default gen_random_uuid() primary key,
-  recipe_id uuid references recipes(id) on delete cascade not null,
-  step_number integer not null,
-  instruction text not null
-);
+-- ===========================
+-- VIEW COUNT FUNCTION
+-- ===========================
+create or replace function increment_view_count(recipe_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+    update recipes
+    set view_count = coalesce(view_count,0) + 1
+    where id = recipe_id;
+end;
+$$;
 
--- Enable Row Level Security
+-- ===========================
+-- INDEXES
+-- ===========================
+create index if not exists idx_recipe_user
+on recipes(user_id);
+
+create index if not exists idx_recipe_public
+on recipes(is_public);
+
+create index if not exists idx_recipe_view
+on recipes(view_count);
+
+create index if not exists idx_ingredients_recipe
+on ingredients(recipe_id);
+
+create index if not exists idx_steps_recipe
+on steps(recipe_id);
+
+create index if not exists idx_reviews_recipe
+on reviews(recipe_id);
+
+create index if not exists idx_reviews_user
+on reviews(user_id);
+
+create index if not exists idx_pantry_user
+on pantry_items(user_id);
+
+create index if not exists idx_chat_user
+on chat_messages(user_id);
+
+-- ===========================
+-- ENABLE RLS
+-- ===========================
 alter table profiles enable row level security;
 alter table recipes enable row level security;
 alter table ingredients enable row level security;
 alter table steps enable row level security;
+alter table pantry_items enable row level security;
+alter table reviews enable row level security;
+alter table chat_messages enable row level security;
 
--- Profiles policies
-create policy "Users can view all profiles"
-  on profiles for select
-  using (true);
+-- ===========================
+-- DROP OLD POLICIES (SAFE)
+-- ===========================
+drop policy if exists "profiles_select" on profiles;
+drop policy if exists "profiles_update" on profiles;
 
-create policy "Users can update own profile"
-  on profiles for update
-  using (auth.uid() = id);
+drop policy if exists "recipes_public_read" on recipes;
+drop policy if exists "recipes_owner_all" on recipes;
 
--- Recipes policies
-create policy "Anyone can view public recipes"
-  on recipes for select
-  using (is_public = true);
+drop policy if exists "ingredients_read" on ingredients;
+drop policy if exists "steps_read" on steps;
 
-create policy "Users can view own recipes"
-  on recipes for select
-  using (auth.uid() = user_id);
+drop policy if exists "pantry_owner" on pantry_items;
 
-create policy "Users can create recipes"
-  on recipes for insert
-  with check (auth.uid() = user_id);
+drop policy if exists "reviews_read" on reviews;
+drop policy if exists "reviews_owner" on reviews;
 
-create policy "Users can update own recipes"
-  on recipes for update
-  using (auth.uid() = user_id);
+drop policy if exists "chat_owner" on chat_messages;
 
-create policy "Users can delete own recipes"
-  on recipes for delete
-  using (auth.uid() = user_id);
+-- ===========================
+-- PROFILES
+-- ===========================
+create policy "profiles_select"
+on profiles
+for select
+using (true);
 
--- Ingredients policies
-create policy "Anyone can view ingredients"
-  on ingredients for select
-  using (true);
+create policy "profiles_update"
+on profiles
+for update
+using (auth.uid() = id);
 
-create policy "Users can manage own ingredients"
-  on ingredients for all
-  using (
-    auth.uid() = (
-      select user_id
-      from recipes
-      where id = recipe_id
-    )
-  );
+-- ===========================
+-- RECIPES
+-- ===========================
+create policy "recipes_public_read"
+on recipes
+for select
+using (is_public = true or auth.uid() = user_id);
 
--- Steps policies
-create policy "Anyone can view steps"
-  on steps for select
-  using (true);
+create policy "recipes_owner_all"
+on recipes
+for all
+using (auth.uid() = user_id);
 
-create policy "Users can manage own steps"
-  on steps for all
-  using (
-    auth.uid() = (
-      select user_id
-      from recipes
-      where id = recipe_id
-    )
-  );
+-- ===========================
+-- INGREDIENTS
+-- ===========================
+create policy "ingredients_read"
+on ingredients
+for select
+using (true);
+
+-- ===========================
+-- STEPS
+-- ===========================
+create policy "steps_read"
+on steps
+for select
+using (true);
+
+-- ===========================
+-- PANTRY
+-- ===========================
+create policy "pantry_owner"
+on pantry_items
+for all
+using (auth.uid() = user_id);
+
+-- ===========================
+-- REVIEWS
+-- ===========================
+create policy "reviews_read"
+on reviews
+for select
+using (true);
+
+create policy "reviews_owner"
+on reviews
+for all
+using (auth.uid() = user_id);
+
+-- ===========================
+-- CHAT
+-- ===========================
+create policy "chat_owner"
+on chat_messages
+for all
+using (auth.uid() = user_id);
