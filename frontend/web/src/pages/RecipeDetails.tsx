@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import ReviewSection from "../pages/ReviewSection";
 
@@ -80,33 +81,37 @@ export default function RecipeDetail() {
   // ============================
   // 🍳 COOK RECIPE FUNCTION
   // ============================
-  const handleCookRecipe = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:4000/api/recipes/${id}/cook`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+const handleCookRecipe = async () => {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Failed to cook recipe");
-        return;
+    const res = await fetch(
+      `http://localhost:4000/api/recipes/${id}/cook`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       }
+    );
 
-      alert(data.message || "Recipe cooked successfully!");
-      navigate("/pantry");
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong while cooking recipe");
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to cook recipe");
+      return;
     }
-  };
+
+    alert(data.message || "Recipe cooked successfully!");
+    navigate("/pantry");
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong while cooking recipe");
+  }
+};
 
   const getAuthorName = (profiles: Recipe["profiles"]) => {
     if (!profiles) return "Unknown";
