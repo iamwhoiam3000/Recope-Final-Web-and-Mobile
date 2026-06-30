@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { AuthRequest } from '../middleware/auth';
 
 // =========================
-// GET ALL PUBLIC RECIPES
+// GET ALL RECIPES
 // =========================
 export const getRecipes = async (req: AuthRequest, res: Response) => {
   const { sort } = req.query;
@@ -25,22 +25,24 @@ export const getRecipes = async (req: AuthRequest, res: Response) => {
 export const getRecipe = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
-  const [{ data: recipe, error }, { data: ingredients }, { data: steps }] =
-    await Promise.all([
-      supabase
-        .from('recipes')
-        .select('*, profiles(username, first_name, last_name, avatar_url)')
-        .eq('id', id)
-        .single(),
-      supabase.from('ingredients').select('*').eq('recipe_id', id),
-      supabase
-        .from('steps')
-        .select('*')
-        .eq('recipe_id', id)
-        .order('step_number'),
-    ]);
+  const { data: recipe, error } = await supabase
+    .from('recipes')
+    .select('*, profiles(username, first_name, last_name, avatar_url)')
+    .eq('id', id)
+    .single();
 
   if (error) return res.status(404).json({ error: 'Recipe not found' });
+
+  const { data: ingredients } = await supabase
+    .from('ingredients')
+    .select('*')
+    .eq('recipe_id', id);
+
+  const { data: steps } = await supabase
+    .from('steps')
+    .select('*')
+    .eq('recipe_id', id)
+    .order('step_number');
 
   await supabase.rpc('increment_view_count', { recipe_id: id });
 
@@ -111,6 +113,7 @@ export const createRecipe = async (req: AuthRequest, res: Response) => {
 // =========================
 export const updateRecipe = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+
   const {
     title,
     description,
@@ -209,7 +212,6 @@ export const getMyRecipes = async (req: AuthRequest, res: Response) => {
 // =========================
 export const cookRecipe = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = req.user!.id;
 
   const { data: ingredients, error: ingError } = await supabase
     .from('ingredients')
@@ -218,14 +220,14 @@ export const cookRecipe = async (req: AuthRequest, res: Response) => {
 
   if (ingError) return res.status(500).json({ error: ingError.message });
 
-  if (!ingredients || ingredients.length === 0) {
+  if (!ingredients?.length) {
     return res.status(400).json({ error: 'No ingredients found for this recipe' });
   }
 
   const { data: pantry, error: pantryError } = await supabase
     .from('pantry_items')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', req.user!.id);
 
   if (pantryError) return res.status(500).json({ error: pantryError.message });
 
