@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const BASE_URL ="http://192.168.1.28:4000";
+const BASE_URL ="https://recope-backend.onrender.com";
 
 const getToken = async () => {
   const { data: { session } } = await supabase.auth.getSession();

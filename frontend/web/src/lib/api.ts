@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://recope-backend.onrender.com';
 
 const getToken = async () => {
   const { supabase } = await import('./supabase');
