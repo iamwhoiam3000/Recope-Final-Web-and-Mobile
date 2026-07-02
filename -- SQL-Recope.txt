@@ -1,0 +1,203 @@
+-- ===========================
+-- REQUIRED EXTENSIONS
+-- ===========================
+create extension if not exists "pgcrypto";
+
+-- ===========================
+-- PROFILES
+-- ===========================
+alter table profiles
+add column if not exists first_name text,
+add column if not exists last_name text;
+
+-- ===========================
+-- RECIPES
+-- ===========================
+alter table recipes
+add column if not exists meal_type text,
+add column if not exists cuisine_type text,
+add column if not exists cook_duration text,
+add column if not exists view_count integer default 0;
+
+-- ===========================
+-- PANTRY ITEMS
+-- ===========================
+create table if not exists pantry_items (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references profiles(id) on delete cascade,
+    name text not null,
+    quantity numeric default 0,
+    unit text,
+    created_at timestamptz default now()
+);
+
+-- ===========================
+-- REVIEWS
+-- ===========================
+create table if not exists reviews (
+    id uuid primary key default gen_random_uuid(),
+    recipe_id uuid not null references recipes(id) on delete cascade,
+    user_id uuid not null references profiles(id) on delete cascade,
+    rating integer not null check (rating between 1 and 5),
+    comment text,
+    difficulty text,
+    is_good boolean,
+    created_at timestamptz default now()
+);
+
+-- ===========================
+-- CHAT MESSAGES
+-- ===========================
+create table if not exists chat_messages (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references profiles(id) on delete cascade,
+    role text not null,
+    content text not null,
+    recipe jsonb,
+    created_at timestamptz default now()
+);
+
+-- ===========================
+-- VIEW COUNT FUNCTION
+-- ===========================
+create or replace function increment_view_count(recipe_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+    update recipes
+    set view_count = coalesce(view_count,0) + 1
+    where id = recipe_id;
+end;
+$$;
+
+-- ===========================
+-- INDEXES
+-- ===========================
+create index if not exists idx_recipe_user
+on recipes(user_id);
+
+create index if not exists idx_recipe_public
+on recipes(is_public);
+
+create index if not exists idx_recipe_view
+on recipes(view_count);
+
+create index if not exists idx_ingredients_recipe
+on ingredients(recipe_id);
+
+create index if not exists idx_steps_recipe
+on steps(recipe_id);
+
+create index if not exists idx_reviews_recipe
+on reviews(recipe_id);
+
+create index if not exists idx_reviews_user
+on reviews(user_id);
+
+create index if not exists idx_pantry_user
+on pantry_items(user_id);
+
+create index if not exists idx_chat_user
+on chat_messages(user_id);
+
+-- ===========================
+-- ENABLE RLS
+-- ===========================
+alter table profiles enable row level security;
+alter table recipes enable row level security;
+alter table ingredients enable row level security;
+alter table steps enable row level security;
+alter table pantry_items enable row level security;
+alter table reviews enable row level security;
+alter table chat_messages enable row level security;
+
+-- ===========================
+-- DROP OLD POLICIES (SAFE)
+-- ===========================
+drop policy if exists "profiles_select" on profiles;
+drop policy if exists "profiles_update" on profiles;
+
+drop policy if exists "recipes_public_read" on recipes;
+drop policy if exists "recipes_owner_all" on recipes;
+
+drop policy if exists "ingredients_read" on ingredients;
+drop policy if exists "steps_read" on steps;
+
+drop policy if exists "pantry_owner" on pantry_items;
+
+drop policy if exists "reviews_read" on reviews;
+drop policy if exists "reviews_owner" on reviews;
+
+drop policy if exists "chat_owner" on chat_messages;
+
+-- ===========================
+-- PROFILES
+-- ===========================
+create policy "profiles_select"
+on profiles
+for select
+using (true);
+
+create policy "profiles_update"
+on profiles
+for update
+using (auth.uid() = id);
+
+-- ===========================
+-- RECIPES
+-- ===========================
+create policy "recipes_public_read"
+on recipes
+for select
+using (is_public = true or auth.uid() = user_id);
+
+create policy "recipes_owner_all"
+on recipes
+for all
+using (auth.uid() = user_id);
+
+-- ===========================
+-- INGREDIENTS
+-- ===========================
+create policy "ingredients_read"
+on ingredients
+for select
+using (true);
+
+-- ===========================
+-- STEPS
+-- ===========================
+create policy "steps_read"
+on steps
+for select
+using (true);
+
+-- ===========================
+-- PANTRY
+-- ===========================
+create policy "pantry_owner"
+on pantry_items
+for all
+using (auth.uid() = user_id);
+
+-- ===========================
+-- REVIEWS
+-- ===========================
+create policy "reviews_read"
+on reviews
+for select
+using (true);
+
+create policy "reviews_owner"
+on reviews
+for all
+using (auth.uid() = user_id);
+
+-- ===========================
+-- CHAT
+-- ===========================
+create policy "chat_owner"
+on chat_messages
+for all
+using (auth.uid() = user_id);
