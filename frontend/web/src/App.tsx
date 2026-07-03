@@ -13,6 +13,7 @@ import RecipeChat from "./pages/RecipeChat";
 import Admin from "./pages/Admin";
 import ResetPassword from "./pages/ResetPassword";
 import EmailVerified from "./pages/EmailVerified";
+import EmailUpdated from "./pages/EmailUpdated";
 
 function Navbar() {
   const { user, signOut, isAdmin } = useAuth();
@@ -214,6 +215,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email-verified" element={<EmailVerified />} />
+        <Route path="/email-updated" element={<EmailUpdated />} />
 
         {!user ? (
           <Route path="*" element={<Login />} />

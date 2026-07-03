@@ -110,7 +110,8 @@ export default function Profile() {
       `Are you sure you want to change your email to "${newEmail}"?\n\nYou will be logged out and a confirmation email will be sent to your new address. Click the link in the email to confirm the change.`,
     );
     if (!confirmed) return;
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await supabase.auth.updateUser({ email: newEmail },{emailRedirectTo:"https://recope-final-web-and-mobile.vercel.app/email-updated",});
+    
     if (error) setEmailMessage(error.message);
     else await supabase.auth.signOut();
   };
