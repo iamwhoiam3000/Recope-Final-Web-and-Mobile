@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
 const GREEN = {
   primary: "#2d6a4f",
@@ -33,16 +34,20 @@ export default function EmailVerified() {
           }}
         >
           <h1
-            style={{
-              color: GREEN.primary,
-              fontSize: 36,
-              fontWeight: 800,
-              marginBottom: 30,
-              cursor: "pointer",
-            }}
-          >
-            ReCope
-          </h1>
+  onClick={async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }}
+  style={{
+    color: GREEN.primary,
+    fontSize: 36,
+    fontWeight: 800,
+    marginBottom: 30,
+    cursor: "pointer",
+  }}
+>
+  ReCope
+</h1>
         </Link>
 
         <h2

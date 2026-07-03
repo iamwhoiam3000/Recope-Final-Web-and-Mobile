@@ -59,17 +59,20 @@ export default function ResetPassword() {
         }}
       >
         <h1
-          style={{
-            color: GREEN.primary,
-            textAlign: "center",
-            fontSize: 34,
-            fontWeight: 800,
-            marginBottom: 30,
-            cursor: "pointer",
-          }}
-        >
-          ReCope
-        </h1>
+  onClick={async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }}
+  style={{
+    color: GREEN.primary,
+    fontSize: 36,
+    fontWeight: 800,
+    marginBottom: 30,
+    cursor: "pointer",
+  }}
+>
+  ReCope
+</h1>
       </Link>
 
       <h2
