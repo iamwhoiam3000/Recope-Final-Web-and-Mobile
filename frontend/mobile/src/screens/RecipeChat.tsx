@@ -27,6 +27,7 @@ export default function RecipeChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedRecipeTitles, setSavedRecipeTitles] = useState<string[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
@@ -91,42 +92,50 @@ export default function RecipeChat() {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  const handleSaveRecipe = async (recipe: any) => {
-    setSaving(true);
-    const data = await api.post("/api/recipes", {
-  title: recipe.title,
-  description: recipe.description,
-  prep_time: recipe.prep_time,
-  cook_time: recipe.cook_time,
-  servings: recipe.servings,
+const handleSaveRecipe = async (recipe: any) => {
+  if (saving || savedRecipeTitles.includes(recipe.title)) return;
 
-  meal_type: Array.isArray(recipe.meal_type)
-    ? recipe.meal_type
-    : recipe.meal_type
-      ? [recipe.meal_type]
-      : [],
+  setSaving(true);
 
-  cuisine_type: recipe.cuisine_type || "",
-  cook_duration: recipe.cook_duration || "",
+  const data = await api.post("/api/recipes", {
+    title: recipe.title,
+    description: recipe.description,
+    prep_time: recipe.prep_time,
+    cook_time: recipe.cook_time,
+    servings: recipe.servings,
 
-  ingredients: recipe.ingredients,
-  steps: recipe.steps,
-  generate_image: true,
-});
+    meal_type: Array.isArray(recipe.meal_type)
+      ? recipe.meal_type
+      : recipe.meal_type
+        ? [recipe.meal_type]
+        : [],
 
-    if (!data.error) {
-      const savedMsg: Message = {
-        role: "assistant",
-        content: `✅ "${recipe.title}" saved to your recipes!`,
-      };
-      setMessages((prev) => [...prev, savedMsg]);
-      await api.post("/api/chat", {
-        role: "assistant",
-        content: savedMsg.content,
-      });
-    }
-    setSaving(false);
-  };
+    cuisine_type: recipe.cuisine_type || "",
+    cook_duration: recipe.cook_duration || "",
+
+    ingredients: recipe.ingredients,
+    steps: recipe.steps,
+    generate_image: true,
+  });
+
+  if (!data.error) {
+    setSavedRecipeTitles((prev) => [...prev, recipe.title]);
+
+    const savedMsg: Message = {
+      role: "assistant",
+      content: `✅ "${recipe.title}" saved to your recipes!`,
+    };
+
+    setMessages((prev) => [...prev, savedMsg]);
+
+    await api.post("/api/chat", {
+      role: "assistant",
+      content: savedMsg.content,
+    });
+  }
+
+  setSaving(false);
+};
 
   const handleClear = async () => {
     await api.remove("/api/chat");
@@ -184,7 +193,11 @@ export default function RecipeChat() {
             disabled={saving}
           >
             <Text style={styles.saveRecipeBtnText}>
-              {saving ? "Saving..." : "+ Save to Recope"}
+              {savedRecipeTitles.includes(item.recipe.title)
+  ? "Saved"
+  : saving
+    ? "Saving..."
+    : "+ Save to Recope"}
             </Text>
           </TouchableOpacity>
         </View>
