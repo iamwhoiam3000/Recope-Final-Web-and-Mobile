@@ -306,42 +306,50 @@ const SectionHeader = ({
   );
 
   const listData = [
-    { key: "search" },
-    { key: "create" },
-    ...(favorites.length > 0
-  ? [
-      { key: "favorites_header" },
-      ...favorites.slice(0, 3).map((r) => ({
-        key: `favorite_${r.id}`,
-        recipe: r,
-      })),
-    ]
-  : []),
-    ...(matched.length > 0
-      ? [
-          { key: "pantry_header" },
-          ...matched.slice(0, 3).map((r) => ({
-            key: `pantry_${r.id}`,
-            recipe: r,
-            highlighted: true,
-          })),
-        ]
-      : []),
-    { key: "divider" },
-    ...(isFiltering
-      ? [
-          { key: "search_header" },
-          ...filtered.map((r) => ({ key: `filtered_${r.id}`, recipe: r })),
-        ]
-      : [
-          { key: "recent_header" },
-          ...recentRecipes.slice(0, recentLimit)
+  { key: "search" },
+
+  ...(isFiltering
+    ? [
+        { key: "search_header" },
+        ...filtered.map((r) => ({ key: `filtered_${r.id}`, recipe: r })),
+      ]
+    : [
+        { key: "create" },
+
+        ...(favorites.length > 0
+          ? [
+              { key: "favorites_header" },
+              ...favorites.slice(0, 3).map((r) => ({
+                key: `favorite_${r.id}`,
+                recipe: r,
+              })),
+            ]
+          : []),
+
+        ...(matched.length > 0
+          ? [
+              { key: "pantry_header" },
+              ...matched.slice(0, 3).map((r) => ({
+                key: `pantry_${r.id}`,
+                recipe: r,
+                highlighted: true,
+              })),
+            ]
+          : []),
+
+        { key: "divider" },
+
+        { key: "recent_header" },
+        ...recentRecipes
+          .slice(0, recentLimit)
           .map((r) => ({ key: `recent_${r.id}`, recipe: r })),
-          { key: "popular_header" },
-          ...popularRecipes.slice(0, popularLimit)
+
+        { key: "popular_header" },
+        ...popularRecipes
+          .slice(0, popularLimit)
           .map((r) => ({ key: `popular_${r.id}`, recipe: r })),
-        ]),
-  ];
+      ]),
+];
 
   return (
     <FlatList
@@ -432,32 +440,42 @@ renderItem={({ item }: any) => {
   );
 
         if (item.key === "create")
-          return (
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => navigation.navigate("CreateRecipe")}
-            >
-              <Text style={styles.createButtonText}>+ Create Recipe</Text>
-            </TouchableOpacity>
-          );
+  return (
+    <TouchableOpacity
+      style={styles.createButton}
+      onPress={() => navigation.navigate("CreateRecipe")}
+    >
+      <Text style={styles.createButtonText}>+ Create Recipe</Text>
+    </TouchableOpacity>
+  );
 
-        if (item.key === "pantry_header")
-          return (
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>🛒 From Your Pantry</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Recipes you can make with what you have
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Main", { screen: "Pantry" })}
-                style={styles.seeAllBtn}
-              >
-                <Text style={styles.seeAllText}>Manage</Text>
-              </TouchableOpacity>
-            </View>
-          );
+if (item.key === "favorites_header")
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        <Text style={styles.sectionTitle}>❤️ My Favorites</Text>
+        <Text style={styles.sectionSubtitle}>Recipes you saved</Text>
+      </View>
+    </View>
+  );
+
+if (item.key === "pantry_header")
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        <Text style={styles.sectionTitle}>🛒 From Your Pantry</Text>
+        <Text style={styles.sectionSubtitle}>
+          Recipes you can make with what you have
+        </Text>
+      </View>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Main", { screen: "Pantry" })}
+        style={styles.seeAllBtn}
+      >
+        <Text style={styles.seeAllText}>Manage</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
         if (item.key === "divider") return <View style={styles.divider} />;
 
