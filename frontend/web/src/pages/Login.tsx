@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+const WEB_URL = "https://recope-final-web-and-mobile.vercel.app";
+
 const GREEN = {
   primary: "#2d6a4f",
   light: "#f0f7f4",
@@ -29,17 +31,41 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
+  if (isSignUp) {
+    const { error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: `${window.location.origin}/email-verified`,
+  },
+});
 
-    if (error) setError(error.message);
-    setLoading(false);
-  };
+    if (error) {
+      setError(error.message);
+    } else {
+      setError("Email Verification Sent! Please check your inbox.");
+    }
+  } else {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+  setError(error.message);
+} else if (isSignUp) {
+  setError("Email Verification Sent! Please check your inbox.");
+} else {
+  setError("");
+}
+  }
+
+  setLoading(false);
+};
 
   const handleForgotPassword = async () => {
   if (!email) {
@@ -51,8 +77,8 @@ export default function Login() {
   setError("");
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "http://localhost:3000/reset-password",
-  });
+  redirectTo: `${window.location.origin}/reset-password`,
+});
 
 if (error) {
   if (error.message.toLowerCase().includes("email rate limit")) {

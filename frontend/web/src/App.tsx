@@ -12,6 +12,7 @@ import Pantry from "./pages/Pantry";
 import RecipeChat from "./pages/RecipeChat";
 import Admin from "./pages/Admin";
 import ResetPassword from "./pages/ResetPassword";
+import EmailVerified from "./pages/EmailVerified";
 
 function Navbar() {
   const { user, signOut, isAdmin } = useAuth();
@@ -201,28 +202,37 @@ function Navbar() {
   );
 }
 
+
 function AppContent() {
   const { user, loading } = useAuth();
 
   if (loading) return <p>Loading...</p>;
-  if (!user) return <Login />;
 
   return (
     <BrowserRouter>
-      <Navbar />
+      {user && <Navbar />}
+
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/recipe/:id" element={<RecipeDetail />} />
-          <Route path="/edit/:id" element={<EditRecipe />} />
-          <Route path="/create" element={<CreateRecipe />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/pantry" element={<Pantry />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          {!user ? (
+            <Route path="*" element={<Login />} />
+          ) : (
+            <>
+              <Route path="/" element={<Home />} />
+              <Route path="/recipe/:id" element={<RecipeDetail />} />
+              <Route path="/edit/:id" element={<EditRecipe />} />
+              <Route path="/create" element={<CreateRecipe />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/pantry" element={<Pantry />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/email-verified" element={<EmailVerified />} />
+            </>
+          )}
         </Routes>
       </div>
-      <RecipeChat />
+
+      {user && <RecipeChat />}
     </BrowserRouter>
   );
 }
