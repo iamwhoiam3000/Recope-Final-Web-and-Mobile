@@ -224,9 +224,10 @@ const handleSaveRecipe = async (recipe: any) => {
         onRequestClose={() => setOpen(false)}
       >
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+  style={{ flex: 1 }}
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+>
           <View style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
@@ -262,14 +263,15 @@ const handleSaveRecipe = async (recipe: any) => {
               </View>
             ) : (
               <FlatList
-                ref={flatListRef}
-                data={messages}
-                keyExtractor={(_, i) => i.toString()}
-                renderItem={renderMessage}
-                contentContainerStyle={styles.messages}
-                onContentSizeChange={() =>
-                  flatListRef.current?.scrollToEnd({ animated: true })
-                }
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={renderMessage}
+              contentContainerStyle={styles.messages}
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
                 ListFooterComponent={
                   loading ? (
                     <View style={[styles.bubble, styles.aiBubble]}>
@@ -386,12 +388,14 @@ const styles = StyleSheet.create({
   },
   saveRecipeBtnText: { color: colors.white, fontSize: 13, fontWeight: "600" },
   inputRow: {
-    flexDirection: "row",
-    gap: 8,
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
+  flexDirection: "row",
+  gap: 8,
+  padding: 12,
+  paddingBottom: Platform.OS === "android" ? 24 : 12,
+  borderTopWidth: 1,
+  borderTopColor: colors.border,
+  backgroundColor: colors.white,
+},
   input: {
     flex: 1,
     borderWidth: 1,

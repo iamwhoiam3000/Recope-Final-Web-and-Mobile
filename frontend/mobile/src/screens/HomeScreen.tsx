@@ -91,8 +91,25 @@ export default function HomeScreen() {
   );
 
   const getMealTypes = (mealType: string | string[] | null | undefined) => {
-  if (Array.isArray(mealType)) return mealType;
-  if (typeof mealType === "string" && mealType.trim()) return [mealType];
+  if (!mealType) return [];
+
+  if (Array.isArray(mealType)) {
+    return mealType;
+  }
+
+  if (typeof mealType === "string") {
+    try {
+      const parsed = JSON.parse(mealType);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+
+    return mealType
+      .replace(/[{}[\]"]/g, "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
   return [];
 };
 

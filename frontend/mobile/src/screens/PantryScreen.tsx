@@ -61,6 +61,25 @@ const UNITS = [
 
 const EXPIRY_WARNING_DAYS = 3;
 
+const parseQuantityForDatabase = (value: string) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) return "0";
+
+  if (/^\d+\/\d+$/.test(trimmed)) {
+    const [num, den] = trimmed.split("/").map(Number);
+    return String(num / den);
+  }
+
+  if (/^\d+\s+\d+\/\d+$/.test(trimmed)) {
+    const [whole, fraction] = trimmed.split(" ");
+    const [num, den] = fraction.split("/").map(Number);
+    return String(Number(whole) + num / den);
+  }
+
+  return trimmed;
+};
+
 const isValidQuantity = (value: string) => {
   const trimmed = value.trim();
 
@@ -213,7 +232,7 @@ export default function PantryScreen() {
 
     const data = await api.post("/api/pantry", {
       name: name.trim(),
-      quantity: quantity.trim(),
+      quantity: parseQuantityForDatabase(quantity),
       unit,
       expiration_date: expiresAt ? expiresAt.toISOString().split("T")[0] : null,
     });
@@ -271,7 +290,7 @@ export default function PantryScreen() {
 
     const payload = {
       name: editForm.name.trim(),
-      quantity: editForm.quantity.trim(),
+      quantity: parseQuantityForDatabase(editForm.quantity),
       unit: editForm.unit,
       expiration_date: editForm.expiresAt
         ? editForm.expiresAt.toISOString().split("T")[0]

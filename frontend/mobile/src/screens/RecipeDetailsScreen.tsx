@@ -153,7 +153,7 @@ export default function RecipeDetailScreen() {
               return;
             }
 
-            navigation.goBack();
+            navigation.navigate("Main", { screen: "Home" });
           },
         },
       ],

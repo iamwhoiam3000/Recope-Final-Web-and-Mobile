@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-import { colors } from "../themes";
+import { colors } from "../theme";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -115,6 +115,7 @@ if (error) {
   <TextInput
     style={styles.passwordInput}
     placeholder="Password"
+    placeholderTextColor={colors.textMuted}
     value={password}
     onChangeText={setPassword}
     secureTextEntry={!showPassword}

@@ -76,29 +76,50 @@ export default function ProfileScreen() {
   );
 
   const handleUpdateEmail = async () => {
-  if (!newEmail) {
+  if (!newEmail.trim()) {
     Alert.alert("Error", "Please enter your new email.");
     return;
   }
 
-  const { error } = await supabase.auth.updateUser(
-    { email: newEmail },
-    {
-      emailRedirectTo:
-        "https://recope-final-web-and-mobile.vercel.app/email-updated",
-    }
-  );
+  Alert.alert(
+    "Confirm Email Change",
+    `Are you sure you want to change your email to "${newEmail.trim()}"?\n\nYou will be logged out and a confirmation email will be sent to your new address.`,
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "OK",
+        onPress: async () => {
+          const { error } = await supabase.auth.updateUser(
+            { email: newEmail.trim() },
+            {
+              emailRedirectTo:
+                "https://recope-final-web-and-mobile.vercel.app/email-updated",
+            },
+          );
 
-  if (error) {
-    setEmailMessage(error.message);
-  } else {
-    setEmailMessage(
-      "Confirmation sent to " +
-        newEmail +
-        ". Please check your new email. After confirming, log in using your new email."
-    );
-    setNewEmail("");
-  }
+          if (error) {
+            Alert.alert("Error", error.message);
+            return;
+          }
+
+          Alert.alert(
+            "Check your email",
+            "A confirmation email was sent. Please confirm it, then sign in using your new email.",
+            [
+              {
+                text: "OK",
+                onPress: async () => {
+                  setNewEmail("");
+                  setEmailMessage("");
+                  await signOut();
+                },
+              },
+            ],
+          );
+        },
+      },
+    ],
+  );
 };
 
  const handlePickAvatar = async () => {
