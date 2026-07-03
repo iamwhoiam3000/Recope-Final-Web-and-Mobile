@@ -98,11 +98,12 @@ if (error) {
   return (
     <div
   style={{
-    display: "flex",
-    minHeight: "100vh",
-    fontFamily: "sans-serif",
-    overflow: "hidden",
-  }}
+  display: "flex",
+  minHeight: "100vh",
+  maxWidth: 1100,
+  margin: "0 auto",
+  fontFamily: "sans-serif",
+}}
 >
       {/* LEFT SIDE */}
       <div
@@ -296,6 +297,7 @@ if (error) {
       <div
         style={{
           flex: 1,
+          minHeight: "100vh",
           backgroundColor: GREEN.primary,
           color: "white",
           display: "flex",
