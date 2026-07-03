@@ -17,11 +17,21 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   const { first_name, last_name, avatar_url } = req.body;
   const userId = req.user!.id;
 
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const fallbackUsername =
+    existingProfile?.username || `user_${userId.slice(0, 8)}`;
+
   const { data, error } = await supabase
     .from("profiles")
     .upsert(
       {
         id: userId,
+        username: fallbackUsername,
         first_name,
         last_name,
         avatar_url,
