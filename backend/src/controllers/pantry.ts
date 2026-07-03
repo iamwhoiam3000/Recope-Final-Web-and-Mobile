@@ -88,7 +88,8 @@ export const matchRecipes = async (req: AuthRequest, res: Response) => {
   .select(`
     *,
     ingredients(name),
-    profiles(username, first_name, last_name, full_name, avatar_url)
+    profiles(username, first_name, last_name, full_name, avatar_url),
+    reviews(rating)
   `)
   .eq('is_public', true);
 
