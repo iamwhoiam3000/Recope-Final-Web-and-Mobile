@@ -24,19 +24,25 @@ export default function RecipeDetailScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { id } = route.params;
+
   const [recipe, setRecipe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [cooking, setCooking] = useState(false);
 
   const fetchRecipe = async () => {
+    setLoading(true);
+
     const data = await api.get(`/api/recipes/${id}`);
     if (data.id) setRecipe(data);
+
     const favs = await api.get("/api/favorites");
-if (Array.isArray(favs)) {
-  setIsFavorite(favs.some((f: any) => f.recipe_id === id));
-}
+    if (Array.isArray(favs)) {
+      setIsFavorite(favs.some((f: any) => f.recipe_id === id));
+    }
+
     setLoading(false);
   };
 
@@ -47,46 +53,85 @@ if (Array.isArray(favs)) {
   );
 
   const handleCookRecipe = async () => {
-  const data = await api.post(`/api/recipes/${id}/cook`, {});
+    if (cooking) return;
 
-  if (data.error) {
-    Alert.alert("Cannot Cook Recipe", data.error);
-    return;
-  }
+    Alert.alert(
+      "Cook Recipe",
+      "This will deduct the recipe ingredients from your pantry. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Cook",
+          onPress: async () => {
+            setCooking(true);
 
-  const deductionText =
-    data.deductions?.length > 0
-      ? data.deductions
-          .map((item: any) =>
-            item.removed
-              ? `• ${item.name}: removed from pantry`
-              : `• ${item.name}: ${item.before} → ${item.after} ${item.unit || ""}`
-          )
-          .join("\n")
-      : "";
+            try {
+              const data = await api.post(`/api/recipes/${id}/cook`, {});
 
-  Alert.alert(
-    "Recipe Cooked",
-    `${data.message || "Recipe cooked successfully!"}${
-      deductionText ? `\n\nPantry updated:\n${deductionText}` : ""
-    }`,
-    [{ text: "View Pantry", onPress: () => navigation.navigate("Main", { screen: "Pantry" }) }]
-  );
-};
+              if (data.error) {
+                Alert.alert("Cannot Cook Recipe", data.error);
+                return;
+              }
 
-const handleToggleFavorite = async () => {
-  setFavoriteLoading(true);
+              const deductionText =
+                data.deductions?.length > 0
+                  ? data.deductions
+                      .map((item: any) =>
+                        item.removed
+                          ? `• ${item.name}: removed from pantry`
+                          : `• ${item.name}: ${item.before} → ${item.after} ${
+                              item.unit || ""
+                            }`,
+                      )
+                      .join("\n")
+                  : "";
 
-  if (isFavorite) {
-    const data = await api.remove(`/api/favorites/${id}`);
-    if (!data.error) setIsFavorite(false);
-  } else {
-    const data = await api.post("/api/favorites", { recipe_id: id });
-    if (!data.error) setIsFavorite(true);
-  }
+              Alert.alert(
+                "Recipe Cooked",
+                `${data.message || "Recipe cooked successfully!"}${
+                  deductionText ? `\n\nPantry updated:\n${deductionText}` : ""
+                }`,
+                [
+                  {
+                    text: "View Pantry",
+                    onPress: () =>
+                      navigation.navigate("Main", { screen: "Pantry" }),
+                  },
+                  {
+                    text: "OK",
+                    style: "cancel",
+                  },
+                ],
+              );
 
-  setFavoriteLoading(false);
-};
+              fetchRecipe();
+            } catch (error: any) {
+              Alert.alert(
+                "Error",
+                error?.message || "Something went wrong while cooking.",
+              );
+            } finally {
+              setCooking(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleToggleFavorite = async () => {
+    setFavoriteLoading(true);
+
+    if (isFavorite) {
+      const data = await api.remove(`/api/favorites/${id}`);
+      if (!data.error) setIsFavorite(false);
+    } else {
+      const data = await api.post("/api/favorites", { recipe_id: id });
+      if (!data.error) setIsFavorite(true);
+    }
+
+    setFavoriteLoading(false);
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -99,12 +144,15 @@ const handleToggleFavorite = async () => {
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
+
             const data = await api.remove(`/api/recipes/${id}`);
+
             if (data.error) {
               Alert.alert("Error", data.error);
               setDeleting(false);
               return;
             }
+
             navigation.goBack();
           },
         },
@@ -138,41 +186,35 @@ const handleToggleFavorite = async () => {
   };
 
   const getMealTypes = (mealType: string | string[] | null | undefined) => {
-  if (Array.isArray(mealType)) return mealType;
-  if (typeof mealType === "string" && mealType.trim()) return [mealType];
-  return [];
-};
+    if (Array.isArray(mealType)) return mealType;
+    if (typeof mealType === "string" && mealType.trim()) return [mealType];
+    return [];
+  };
 
-  return (
+    return (
     <View style={{ flex: 1, backgroundColor: colors.white }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Hero image */}
         <View style={styles.hero}>
           {recipe.image_url ? (
-            <Image
-              source={{ uri: recipe.image_url }}
-              style={styles.heroImage}
-            />
+            <Image source={{ uri: recipe.image_url }} style={styles.heroImage} />
           ) : (
             <Text style={styles.heroEmoji}>🍽️</Text>
           )}
         </View>
 
         <View style={styles.content}>
-          {/* Title */}
           <Text style={styles.title}>{recipe.title}</Text>
 
           <TouchableOpacity
-  style={styles.favoriteButton}
-  onPress={handleToggleFavorite}
-  disabled={favoriteLoading}
->
-  <Text style={styles.favoriteButtonText}>
-    {isFavorite ? "❤️ Favorited" : "🤍 Add to Favorites"}
-  </Text>
-</TouchableOpacity>
+            style={styles.favoriteButton}
+            onPress={handleToggleFavorite}
+            disabled={favoriteLoading}
+          >
+            <Text style={styles.favoriteButtonText}>
+              {isFavorite ? "❤️ Favorited" : "🤍 Add to Favorites"}
+            </Text>
+          </TouchableOpacity>
 
-          {/* Author */}
           <View style={styles.authorRow}>
             <View style={styles.authorAvatar}>
               {recipe.profiles?.avatar_url ? (
@@ -186,6 +228,7 @@ const handleToggleFavorite = async () => {
                 </Text>
               )}
             </View>
+
             <View>
               <Text style={styles.authorName}>
                 {getAuthorName(recipe.profiles)}
@@ -194,21 +237,21 @@ const handleToggleFavorite = async () => {
             </View>
           </View>
 
-          {/* Category badges */}
           {(getMealTypes(recipe.meal_type).length > 0 ||
-          recipe.cuisine_type ||
-          recipe.cook_duration) && (
+            recipe.cuisine_type ||
+            recipe.cook_duration) && (
             <View style={styles.badges}>
               {getMealTypes(recipe.meal_type).map((type: string) => (
-                  <View
-                    key={type}
-                    style={[styles.badge, { backgroundColor: "#fdf3e7" }]}
-                  >
-                    <Text style={[styles.badgeText, { color: colors.primary }]}>
-                      {type}
-                    </Text>
-                  </View>
-                ))}
+                <View
+                  key={type}
+                  style={[styles.badge, { backgroundColor: "#fdf3e7" }]}
+                >
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>
+                    {type}
+                  </Text>
+                </View>
+              ))}
+
               {recipe.cuisine_type && (
                 <View style={[styles.badge, { backgroundColor: "#f0f0f0" }]}>
                   <Text style={[styles.badgeText, { color: "#666" }]}>
@@ -216,6 +259,7 @@ const handleToggleFavorite = async () => {
                   </Text>
                 </View>
               )}
+
               {recipe.cook_duration && (
                 <View style={[styles.badge, { backgroundColor: "#f0f7ff" }]}>
                   <Text style={[styles.badgeText, { color: "#1976d2" }]}>
@@ -228,7 +272,6 @@ const handleToggleFavorite = async () => {
 
           <Text style={styles.description}>{recipe.description}</Text>
 
-          {/* Meta cards */}
           <View style={styles.metaRow}>
             {[
               { label: "Prep", value: `${recipe.prep_time}min` },
@@ -243,9 +286,9 @@ const handleToggleFavorite = async () => {
             ))}
           </View>
 
-          {/* Ingredients */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Ingredients</Text>
+
             {recipe.ingredients?.map((ing: any) => (
               <View key={ing.id} style={styles.ingredientRow}>
                 <View style={styles.ingredientDot} />
@@ -257,9 +300,9 @@ const handleToggleFavorite = async () => {
             ))}
           </View>
 
-          {/* Steps */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Steps</Text>
+
             {recipe.steps?.map((step: any, index: number) => (
               <View key={step.id} style={styles.stepRow}>
                 <View style={styles.stepNumber}>
@@ -269,73 +312,81 @@ const handleToggleFavorite = async () => {
               </View>
             ))}
           </View>
+
           <ReviewSection recipeId={id} />
         </View>
       </ScrollView>
 
-      {/* Fixed action buttons OUTSIDE ScrollView */}
-      {isOwner && (
-        <View style={styles.actions}>
-
-          <TouchableOpacity
-          style={styles.cookButton}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.cookButton, cooking && styles.disabledButton]}
           activeOpacity={0.7}
           onPress={handleCookRecipe}
-          >
-            <Text style={styles.cookButtonText}>Cook</Text>
+          disabled={cooking}
+        >
+          <Text style={styles.cookButtonText}>
+            {cooking ? "Cooking..." : "Cook Recipe"}
+          </Text>
+        </TouchableOpacity>
+
+        {isOwner && (
+          <>
+            <TouchableOpacity
+              style={styles.editButton}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("EditRecipe", { editId: id })}
+            >
+              <Text style={styles.editButtonText}>Edit Recipe</Text>
             </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.editButton}
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate("EditRecipe", { editId: id })}
-          >
-            <Text style={styles.editButtonText}>Edit Recipe</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            activeOpacity={0.7}
-            onPress={handleDelete}
-            disabled={deleting}
-          >
-            <Text style={styles.deleteButtonText}>
-              {deleting ? "Deleting..." : "Delete"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            <TouchableOpacity
+              style={styles.deleteButton}
+              activeOpacity={0.7}
+              onPress={handleDelete}
+              disabled={deleting}
+            >
+              <Text style={styles.deleteButtonText}>
+                {deleting ? "Deleting..." : "Delete"}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   favoriteButton: {
-  alignSelf: "flex-start",
-  backgroundColor: colors.primaryLight,
-  borderRadius: 20,
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-  marginBottom: 12,
-  borderWidth: 1,
-  borderColor: colors.border,
-},
-favoriteButtonText: {
-  color: colors.primary,
-  fontWeight: "600",
-  fontSize: 13,
-},
+    alignSelf: "flex-start",
+    backgroundColor: colors.primaryLight,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  favoriteButtonText: {
+    color: colors.primary,
+    fontWeight: "600",
+    fontSize: 13,
+  },
   cookButton: {
-  flex: 1,
-  backgroundColor: "#40916c",
-  borderRadius: 10,
-  padding: 14,
-  alignItems: "center",
-},
-cookButtonText: {
-  color: colors.white,
-  fontWeight: "600",
-  fontSize: 15,
-},
+    flex: 1,
+    backgroundColor: "#40916c",
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+  },
+  cookButtonText: {
+    color: colors.white,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
   hero: {
     width: "100%",
     height: 240,
@@ -369,19 +420,46 @@ cookButtonText: {
     borderWidth: 1,
     borderColor: colors.border,
   },
-  authorAvatarText: { fontSize: 14, fontWeight: "700", color: colors.primary },
-  authorName: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
-  authorLabel: { fontSize: 12, color: colors.textMuted },
-  badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14 },
-  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
-  badgeText: { fontSize: 12, fontWeight: "600" },
+  authorAvatarText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  authorName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  authorLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  badges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 14,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   description: {
     fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 20,
     lineHeight: 22,
   },
-  metaRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
+  metaRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 24,
+  },
   metaCard: {
     flex: 1,
     backgroundColor: colors.background,
@@ -391,8 +469,16 @@ cookButtonText: {
     borderWidth: 1,
     borderColor: colors.border,
   },
-  metaValue: { fontSize: 16, fontWeight: "700", color: colors.primary },
-  metaLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  metaValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  metaLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   section: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -421,14 +507,22 @@ cookButtonText: {
     borderRadius: 3,
     backgroundColor: colors.primary,
   },
-  ingredientAmount: { fontSize: 14, color: colors.textSecondary, minWidth: 60 },
+  ingredientAmount: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    minWidth: 60,
+  },
   ingredientName: {
     fontSize: 15,
     fontWeight: "500",
     color: colors.textPrimary,
     flex: 1,
   },
-  stepRow: { flexDirection: "row", gap: 14, marginBottom: 16 },
+  stepRow: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 16,
+  },
   stepNumber: {
     width: 30,
     height: 30,
@@ -438,7 +532,11 @@ cookButtonText: {
     justifyContent: "center",
     flexShrink: 0,
   },
-  stepNumberText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  stepNumberText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
   stepText: {
     flex: 1,
     fontSize: 15,
@@ -466,7 +564,11 @@ cookButtonText: {
     padding: 14,
     alignItems: "center",
   },
-  editButtonText: { color: colors.white, fontWeight: "600", fontSize: 15 },
+  editButtonText: {
+    color: colors.white,
+    fontWeight: "600",
+    fontSize: 15,
+  },
   deleteButton: {
     borderWidth: 1,
     borderColor: colors.dangerBorder,
@@ -476,5 +578,9 @@ cookButtonText: {
     paddingHorizontal: 20,
     alignItems: "center",
   },
-  deleteButtonText: { color: colors.danger, fontWeight: "600", fontSize: 15 },
+  deleteButtonText: {
+    color: colors.danger,
+    fontWeight: "600",
+    fontSize: 15,
+  },
 });

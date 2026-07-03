@@ -177,13 +177,16 @@ export default function CreateRecipeScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+  style={{ flex: 1 }}
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+>
+  <ScrollView
+    style={styles.container}
+    contentContainerStyle={{ paddingBottom: 120 }}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+  >
         {/* Basic info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Info</Text>

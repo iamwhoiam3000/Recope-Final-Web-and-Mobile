@@ -11,7 +11,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../themes";
+import { colors } from "../theme";
 
 interface Props {
   currentImage?: string;
@@ -24,40 +24,75 @@ export default function ImageUpload({ currentImage, onUpload }: Props) {
   const [preview, setPreview] = useState(currentImage || "");
 
   const handlePick = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
+    try {
+      if (!user?.id) {
+        Alert.alert("Error", "You must be logged in to upload an image.");
+        return;
+      }
 
-    if (result.canceled) return;
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    setUploading(true);
-    const uri = result.assets[0].uri;
-    const ext = uri.split(".").pop();
-    const fileName = `${user!.id}/${Date.now()}.${ext}`;
+      if (!permission.granted) {
+        Alert.alert("Permission required", "Please allow photo access.");
+        return;
+      }
 
-    setPreview(uri);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
 
-    const response = await fetch(uri);
-    const blob = await response.blob();
+      if (result.canceled || !result.assets?.length) return;
 
-    const { error } = await supabase.storage
-      .from("recipe-images")
-      .upload(fileName, blob, { upsert: true, contentType: `image/${ext}` });
+      setUploading(true);
 
-    if (error) {
-      Alert.alert("Error", "Failed to upload image");
+      const asset = result.assets[0];
+      const uri = asset.uri;
+
+      setPreview(uri);
+
+      const extension =
+        uri.split(".").pop()?.split("?")[0]?.toLowerCase() || "jpg";
+
+      const contentType =
+        extension === "png"
+          ? "image/png"
+          : extension === "webp"
+            ? "image/webp"
+            : "image/jpeg";
+
+      const fileName = `${user.id}/${Date.now()}.${extension}`;
+
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const { error } = await supabase.storage
+        .from("recipe-images")
+        .upload(fileName, arrayBuffer, {
+          contentType,
+          upsert: true,
+        });
+
+      if (error) {
+        console.log("Image upload error:", error);
+        Alert.alert("Error", error.message || "Failed to upload image");
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("recipe-images")
+        .getPublicUrl(fileName);
+
+      onUpload(data.publicUrl);
+    } catch (err: any) {
+      console.log("Image upload exception:", err);
+      Alert.alert("Error", err?.message || "Failed to upload image");
+    } finally {
       setUploading(false);
-      return;
     }
-
-    const { data } = supabase.storage
-      .from("recipe-images")
-      .getPublicUrl(fileName);
-    onUpload(data.publicUrl);
-    setUploading(false);
   };
 
   const handleRemove = () => {
@@ -68,10 +103,12 @@ export default function ImageUpload({ currentImage, onUpload }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Recipe Image</Text>
+
       <TouchableOpacity
         style={styles.uploadArea}
         onPress={handlePick}
         activeOpacity={0.7}
+        disabled={uploading}
       >
         {preview ? (
           <Image source={{ uri: preview }} style={styles.preview} />
@@ -82,6 +119,7 @@ export default function ImageUpload({ currentImage, onUpload }: Props) {
             <Text style={styles.placeholderSub}>PNG, JPG up to 5MB</Text>
           </View>
         )}
+
         {uploading && (
           <View style={styles.overlay}>
             <ActivityIndicator color={colors.primary} />
@@ -89,11 +127,12 @@ export default function ImageUpload({ currentImage, onUpload }: Props) {
           </View>
         )}
       </TouchableOpacity>
-      {preview && (
-        <TouchableOpacity onPress={handleRemove}>
+
+      {preview ? (
+        <TouchableOpacity onPress={handleRemove} disabled={uploading}>
           <Text style={styles.removeText}>Remove image</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -130,6 +169,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  uploadingText: { fontSize: 13, color: colors.primary, fontWeight: "600" },
-  removeText: { color: colors.textMuted, fontSize: 13, marginTop: 8 },
+  uploadingText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  removeText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 8,
+  },
 });

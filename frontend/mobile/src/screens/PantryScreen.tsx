@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -36,15 +38,57 @@ const UNITS = [
   "bag",
   "can",
   "bottle",
+  "pound",
+  "lb",
+  "oz",
+  "slice",
+  "clove",
+  "head",
+  "bunch",
+  "sprig",
+  "leaf",
+  "leaves",
+  "ear",
+  "ears",
+  "sheet",
+  "sheets",
+  "block",
+  "stick",
+  "jar",
+  "box",
+  "loaf",
 ];
 
 const EXPIRY_WARNING_DAYS = 3;
 
+const isValidQuantity = (value: string) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) return true;
+
+  if (/^\d+(\.\d+)?$/.test(trimmed)) return true;
+
+  if (/^\d+\/\d+$/.test(trimmed)) {
+    const [num, den] = trimmed.split("/").map(Number);
+    return den !== 0 && num >= 0;
+  }
+
+  if (/^\d+\s+\d+\/\d+$/.test(trimmed)) {
+    const [whole, fraction] = trimmed.split(" ");
+    const [num, den] = fraction.split("/").map(Number);
+    return Number(whole) >= 0 && den !== 0 && num >= 0;
+  }
+
+  return false;
+};
+
 function getDaysUntilExpiry(expiresAt: string): number {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+
   const exp = new Date(expiresAt);
   exp.setHours(0, 0, 0, 0);
+
   return Math.floor((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
@@ -52,23 +96,34 @@ function getExpiryStatus(
   expiresAt?: string | null,
 ): "expired" | "warning" | "ok" | "none" {
   if (!expiresAt) return "none";
+
   const days = getDaysUntilExpiry(expiresAt);
+
   if (days < 0) return "expired";
   if (days <= EXPIRY_WARNING_DAYS) return "warning";
+
   return "ok";
 }
 
 function ExpiryBadge({ expiresAt }: { expiresAt?: string | null }) {
   if (!expiresAt) return null;
+
   const days = getDaysUntilExpiry(expiresAt);
   const status = getExpiryStatus(expiresAt);
 
   let label = "";
-  if (status === "expired") label = "Expired";
-  else if (status === "warning")
+
+  if (status === "expired") {
+    label = "Expired";
+  } else if (status === "warning") {
     label = days === 0 ? "Expires today" : `Expires in ${days}d`;
-  else
-    label = `Exp: ${new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+  } else {
+    label = `Exp: ${new Date(expiresAt).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+  }
 
   const badgeStyle =
     status === "expired"
@@ -126,34 +181,53 @@ export default function PantryScreen() {
   const expiredItems = items.filter(
     (i) => getExpiryStatus(i.expiration_date) === "expired",
   );
+
   const warningItems = items.filter(
     (i) => getExpiryStatus(i.expiration_date) === "warning",
   );
+
   const alertItems = [...expiredItems, ...warningItems];
 
   const sortedItems = [...items].sort((a, b) => {
     const order = { expired: 0, warning: 1, ok: 2, none: 3 };
+
     return (
-      order[getExpiryStatus(a.expiration_date)] - order[getExpiryStatus(b.expiration_date)]
+      order[getExpiryStatus(a.expiration_date)] -
+      order[getExpiryStatus(b.expiration_date)]
     );
   });
 
   const handleAdd = async () => {
-    if (!name) return Alert.alert("Error", "Please enter an ingredient name");
+    if (!name.trim()) {
+      return Alert.alert("Error", "Please enter an ingredient name");
+    }
+
+    if (!isValidQuantity(quantity)) {
+      return Alert.alert(
+        "Invalid quantity",
+        "Use a number or fraction like 1/2, 1/4, 1/8, or 1 1/2.",
+      );
+    }
+
     setAdding(true);
+
     const data = await api.post("/api/pantry", {
-      name,
-      quantity,
+      name: name.trim(),
+      quantity: quantity.trim(),
       unit,
       expiration_date: expiresAt ? expiresAt.toISOString().split("T")[0] : null,
     });
+
     if (!data.error) {
       setItems((prev) => [...prev, data]);
       setName("");
       setQuantity("");
       setUnit("pcs");
       setExpiresAt(null);
+    } else {
+      Alert.alert("Error", data.error);
     }
+
     setAdding(false);
   };
 
@@ -182,26 +256,43 @@ export default function PantryScreen() {
   };
 
   const handleSaveEdit = async (id: string) => {
+    if (!editForm.name.trim()) {
+      return Alert.alert("Error", "Please enter an ingredient name");
+    }
+
+    if (!isValidQuantity(editForm.quantity)) {
+      return Alert.alert(
+        "Invalid quantity",
+        "Use a number or fraction like 1/2, 1/4, 1/8, or 1 1/2.",
+      );
+    }
+
     setSavingId(id);
+
     const payload = {
-      name: editForm.name,
-      quantity: editForm.quantity,
+      name: editForm.name.trim(),
+      quantity: editForm.quantity.trim(),
       unit: editForm.unit,
       expiration_date: editForm.expiresAt
-  ? editForm.expiresAt.toISOString().split("T")[0]
-  : null,
+        ? editForm.expiresAt.toISOString().split("T")[0]
+        : null,
     };
+
     const data = await api.put(`/api/pantry/${id}`, payload);
+
     if (!data.error) {
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, ...payload } : i)),
       );
       setEditingId(null);
+    } else {
+      Alert.alert("Error", data.error);
     }
+
     setSavingId(null);
   };
 
-  if (loading)
+    if (loading)
     return (
       <ActivityIndicator
         style={{ flex: 1 }}
@@ -211,14 +302,17 @@ export default function PantryScreen() {
     );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <FlatList
         data={sortedItems}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}
         ListHeaderComponent={
           <View>
-            {/* Expiry alert banner */}
             {!dismissedAlert && alertItems.length > 0 && (
               <View
                 style={[
@@ -232,7 +326,8 @@ export default function PantryScreen() {
                   <Text style={styles.alertIcon}>
                     {expiredItems.length > 0 ? "🚨" : "⚠️"}
                   </Text>
-                  <View>
+
+                  <View style={{ flex: 1 }}>
                     <Text
                       style={[
                         styles.alertTitle,
@@ -242,29 +337,35 @@ export default function PantryScreen() {
                       ]}
                     >
                       {expiredItems.length > 0
-                        ? `${expiredItems.length} item${expiredItems.length > 1 ? "s" : ""} expired`
+                        ? `${expiredItems.length} item${
+                            expiredItems.length > 1 ? "s" : ""
+                          } expired`
                         : ""}
                       {expiredItems.length > 0 && warningItems.length > 0
                         ? " · "
                         : ""}
                       {warningItems.length > 0
-                        ? `${warningItems.length} item${warningItems.length > 1 ? "s" : ""} expiring soon`
+                        ? `${warningItems.length} item${
+                            warningItems.length > 1 ? "s" : ""
+                          } expiring soon`
                         : ""}
                     </Text>
+
                     <Text style={styles.alertNames}>
                       {alertItems.map((i) => i.name).join(", ")}
                     </Text>
                   </View>
                 </View>
+
                 <TouchableOpacity onPress={() => setDismissedAlert(true)}>
                   <Text style={styles.alertDismiss}>×</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            {/* Add form */}
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Add Ingredient</Text>
+
               <TextInput
                 style={styles.input}
                 placeholder="Ingredient name"
@@ -272,20 +373,23 @@ export default function PantryScreen() {
                 value={name}
                 onChangeText={setName}
               />
+
               <View style={styles.row}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.quantityInput]}
                   placeholder="Qty"
                   placeholderTextColor={colors.textMuted}
                   value={quantity}
                   onChangeText={setQuantity}
                   keyboardType="default"
                 />
+
                 <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={unit}
-                    onValueChange={setUnit}
+                    onValueChange={(value) => setUnit(String(value))}
                     style={styles.picker}
+                    dropdownIconColor={colors.textPrimary}
                   >
                     {UNITS.map((u) => (
                       <Picker.Item key={u} label={u} value={u} />
@@ -294,9 +398,9 @@ export default function PantryScreen() {
                 </View>
               </View>
 
-              {/* Expiry date */}
               <View style={styles.expiryRow}>
                 <Text style={styles.expiryLabel}>Expires on</Text>
+
                 <TouchableOpacity
                   style={styles.dateBtn}
                   onPress={() => setShowAddPicker(true)}
@@ -315,12 +419,14 @@ export default function PantryScreen() {
                       : "Set date"}
                   </Text>
                 </TouchableOpacity>
+
                 {expiresAt && (
                   <TouchableOpacity onPress={() => setExpiresAt(null)}>
                     <Text style={styles.clearDate}>×</Text>
                   </TouchableOpacity>
                 )}
               </View>
+
               {showAddPicker && (
                 <DateTimePicker
                   value={expiresAt || new Date()}
@@ -360,6 +466,7 @@ export default function PantryScreen() {
         }
         renderItem={({ item }) => {
           const status = getExpiryStatus(item.expiration_date);
+
           const cardStyle =
             status === "expired"
               ? styles.itemCardExpired
@@ -380,9 +487,10 @@ export default function PantryScreen() {
                     placeholder="Ingredient name"
                     placeholderTextColor={colors.textMuted}
                   />
+
                   <View style={styles.row}>
                     <TextInput
-                      style={[styles.input, { flex: 1 }]}
+                      style={[styles.input, styles.quantityInput]}
                       value={editForm.quantity}
                       onChangeText={(v) =>
                         setEditForm((f) => ({ ...f, quantity: v }))
@@ -391,13 +499,18 @@ export default function PantryScreen() {
                       placeholderTextColor={colors.textMuted}
                       keyboardType="default"
                     />
+
                     <View style={styles.pickerContainer}>
                       <Picker
                         selectedValue={editForm.unit}
-                        onValueChange={(v) =>
-                          setEditForm((f) => ({ ...f, unit: v }))
+                        onValueChange={(value) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            unit: String(value),
+                          }))
                         }
                         style={styles.picker}
+                        dropdownIconColor={colors.textPrimary}
                       >
                         {UNITS.map((u) => (
                           <Picker.Item key={u} label={u} value={u} />
@@ -406,9 +519,9 @@ export default function PantryScreen() {
                     </View>
                   </View>
 
-                  {/* Edit expiry date */}
                   <View style={styles.expiryRow}>
                     <Text style={styles.expiryLabel}>Expires on</Text>
+
                     <TouchableOpacity
                       style={styles.dateBtn}
                       onPress={() => setShowEditPicker(true)}
@@ -429,6 +542,7 @@ export default function PantryScreen() {
                           : "Set date"}
                       </Text>
                     </TouchableOpacity>
+
                     {editForm.expiresAt && (
                       <TouchableOpacity
                         onPress={() =>
@@ -439,6 +553,7 @@ export default function PantryScreen() {
                       </TouchableOpacity>
                     )}
                   </View>
+
                   {showEditPicker && (
                     <DateTimePicker
                       value={editForm.expiresAt || new Date()}
@@ -458,6 +573,7 @@ export default function PantryScreen() {
                     >
                       <Text style={styles.cancelBtnText}>Cancel</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
                       style={styles.saveBtn}
                       onPress={() => handleSaveEdit(item.id)}
@@ -482,18 +598,22 @@ export default function PantryScreen() {
                             : {},
                       ]}
                     />
+
                     <Text style={styles.itemName}>{item.name}</Text>
+
                     <View style={styles.itemBadge}>
                       <Text style={styles.itemBadgeText}>
                         {item.quantity} {item.unit}
                       </Text>
                     </View>
+
                     <TouchableOpacity
                       onPress={() => handleStartEdit(item)}
                       style={styles.actionBtn}
                     >
                       <Text style={styles.editBtnText}>Edit</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
                       onPress={() => handleDelete(item.id)}
                       style={[styles.actionBtn, styles.deleteBtnContainer]}
@@ -501,6 +621,7 @@ export default function PantryScreen() {
                       <Text style={styles.deleteBtnText}>Delete</Text>
                     </TouchableOpacity>
                   </View>
+
                   {item.expiration_date && (
                     <View style={{ marginTop: 6, marginLeft: 16 }}>
                       <ExpiryBadge expiresAt={item.expiration_date} />
@@ -512,7 +633,7 @@ export default function PantryScreen() {
           );
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -544,6 +665,7 @@ const styles = StyleSheet.create({
   alertTitleWarning: { color: "#1b4332" },
   alertNames: { fontSize: 12, color: "#777" },
   alertDismiss: { fontSize: 20, color: "#aaa", lineHeight: 22 },
+
   card: {
     margin: 16,
     backgroundColor: colors.white,
@@ -567,18 +689,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     color: colors.textPrimary,
     marginBottom: 10,
+    height: 46,
   },
-  row: { flexDirection: "row", gap: 10 },
+  row: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+  quantityInput: {
+    width: 95,
+    flexShrink: 0,
+  },
   pickerContainer: {
     flex: 1,
+    height: 46,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
     backgroundColor: colors.background,
     marginBottom: 10,
     justifyContent: "center",
+    overflow: "hidden",
   },
-  picker: { height: 44 },
+  picker: {
+    width: "100%",
+    height: 46,
+    color: colors.textPrimary,
+  },
+
   expiryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -597,6 +735,7 @@ const styles = StyleSheet.create({
   dateBtnText: { fontSize: 14, color: colors.textPrimary },
   dateBtnPlaceholder: { fontSize: 14, color: colors.textFaint },
   clearDate: { fontSize: 20, color: "#aaa", lineHeight: 22 },
+
   addBtn: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -604,6 +743,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addBtnText: { color: colors.white, fontWeight: "600", fontSize: 15 },
+
   listTitle: {
     fontSize: 16,
     fontWeight: "600",
@@ -620,6 +760,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptySubtitle: { fontSize: 14, color: colors.textMuted },
+
   itemCard: {
     marginHorizontal: 16,
     marginBottom: 10,
@@ -652,7 +793,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 4,
   },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   itemDot: {
     width: 8,
     height: 8,
@@ -661,6 +808,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     flex: 1,
+    minWidth: 100,
     fontSize: 15,
     fontWeight: "500",
     color: colors.textPrimary,
@@ -682,6 +830,7 @@ const styles = StyleSheet.create({
   editBtnText: { fontSize: 13, color: colors.textSecondary },
   deleteBtnContainer: { borderColor: colors.dangerBorder },
   deleteBtnText: { fontSize: 13, color: colors.danger },
+
   editActions: {
     flexDirection: "row",
     gap: 8,
@@ -703,6 +852,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   saveBtnText: { fontSize: 14, color: colors.white, fontWeight: "600" },
+
   badgeExpired: {
     alignSelf: "flex-start",
     backgroundColor: colors.danger,
