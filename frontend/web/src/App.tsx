@@ -212,12 +212,16 @@ function AppContent() {
     <BrowserRouter>
       {user && <Navbar />}
 
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
+      {!user ? (
         <Routes>
-          {!user ? (
-            <Route path="*" element={<Login />} />
-          ) : (
-            <>
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/email-verified" element={<EmailVerified />} />
+          <Route path="*" element={<Login />} />
+        </Routes>
+      ) : (
+        <>
+          <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
+            <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/recipe/:id" element={<RecipeDetail />} />
               <Route path="/edit/:id" element={<EditRecipe />} />
@@ -227,12 +231,12 @@ function AppContent() {
               <Route path="/admin" element={<Admin />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/email-verified" element={<EmailVerified />} />
-            </>
-          )}
-        </Routes>
-      </div>
+            </Routes>
+          </div>
 
-      {user && <RecipeChat />}
+          <RecipeChat />
+        </>
+      )}
     </BrowserRouter>
   );
 }
