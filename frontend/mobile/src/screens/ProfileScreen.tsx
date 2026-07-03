@@ -76,15 +76,30 @@ export default function ProfileScreen() {
   );
 
   const handleUpdateEmail = async () => {
-    if (!newEmail) return;
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
-    if (error) {
-      setEmailMessage(error.message);
-    } else {
-      setEmailMessage("Confirmation sent to " + newEmail);
-      setNewEmail("");
+  if (!newEmail) {
+    Alert.alert("Error", "Please enter your new email.");
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser(
+    { email: newEmail },
+    {
+      emailRedirectTo:
+        "https://recope-final-web-and-mobile.vercel.app/email-updated",
     }
-  };
+  );
+
+  if (error) {
+    setEmailMessage(error.message);
+  } else {
+    setEmailMessage(
+      "Confirmation sent to " +
+        newEmail +
+        ". Please check your new email. After confirming, log in using your new email."
+    );
+    setNewEmail("");
+  }
+};
 
  const handlePickAvatar = async () => {
   const result = await ImagePicker.launchImageLibraryAsync({
