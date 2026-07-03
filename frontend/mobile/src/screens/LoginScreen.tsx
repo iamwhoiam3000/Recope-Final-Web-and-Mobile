@@ -22,17 +22,44 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email || !password)
-      return Alert.alert("Error", "Please fill in all fields");
-    setLoading(true);
+  if (!email || !password) {
+    return Alert.alert("Error", "Please fill in all fields");
+  }
 
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
+  setLoading(true);
 
-    if (error) Alert.alert("Error", error.message);
-    setLoading(false);
-  };
+  if (isSignUp) {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo:
+          "https://recope-final-web-and-mobile.vercel.app/email-verified",
+      },
+    });
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      Alert.alert(
+        "Email Verification Sent!",
+        "Please check your email and verify your account before signing in."
+      );
+      setIsSignUp(false);
+    }
+  } else {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    }
+  }
+
+  setLoading(false);
+};
 
   const handleForgotPassword = async () => {
   if (!email) {
@@ -42,7 +69,8 @@ export default function LoginScreen() {
 
   setLoading(true);
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: "https://recope-final-web-and-mobile.vercel.app/reset-password",
+  });
 
 if (error) {
   if (error.message.toLowerCase().includes("email rate limit")) {
