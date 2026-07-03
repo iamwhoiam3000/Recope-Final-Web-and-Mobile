@@ -376,16 +376,6 @@ ListFooterComponent={
   ) : null
 }
 renderItem={({ item }: any) => {
-  return (
-    <View style={styles.sectionHeader}>
-      <View>
-        <Text style={styles.sectionTitle}>❤️ My Favorites</Text>
-        <Text style={styles.sectionSubtitle}>
-          Recipes you saved
-        </Text>
-      </View>
-    </View>
-  );
         if (item.key === "search")
   return (
     <View style={styles.searchContainer}>
