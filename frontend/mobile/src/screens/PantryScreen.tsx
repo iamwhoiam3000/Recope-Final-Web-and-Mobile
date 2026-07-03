@@ -279,7 +279,7 @@ export default function PantryScreen() {
                   placeholderTextColor={colors.textMuted}
                   value={quantity}
                   onChangeText={setQuantity}
-                  keyboardType="numeric"
+                  keyboardType="default"
                 />
                 <View style={styles.pickerContainer}>
                   <Picker
@@ -389,7 +389,7 @@ export default function PantryScreen() {
                       }
                       placeholder="Qty"
                       placeholderTextColor={colors.textMuted}
-                      keyboardType="numeric"
+                      keyboardType="default"
                     />
                     <View style={styles.pickerContainer}>
                       <Picker
