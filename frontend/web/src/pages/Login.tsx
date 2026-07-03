@@ -96,7 +96,14 @@ if (error) {
 };
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
+    <div
+  style={{
+    display: "flex",
+    minHeight: "100vh",
+    fontFamily: "sans-serif",
+    overflow: "hidden",
+  }}
+>
       {/* LEFT SIDE */}
       <div
         style={{
@@ -104,6 +111,8 @@ if (error) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          padding: 24,
+          boxSizing: "border-box",
           backgroundColor: GREEN.light,
         }}
       >
