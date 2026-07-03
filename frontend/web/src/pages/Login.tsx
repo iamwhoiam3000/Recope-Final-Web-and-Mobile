@@ -99,8 +99,9 @@ if (error) {
     <div
   style={{
   display: "flex",
-  minHeight: "100vh",
-  width: "100vw",
+  height: "100vh",
+  width: "100%",
+  overflow: "hidden",
   fontFamily: "sans-serif",
 }}
 >
@@ -296,7 +297,7 @@ if (error) {
       <div
         style={{
           flex: 1,
-          minHeight: "100vh",
+          height: "100%",
           backgroundColor: GREEN.primary,
           color: "white",
           display: "flex",
