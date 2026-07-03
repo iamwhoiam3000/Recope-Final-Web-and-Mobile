@@ -22,7 +22,7 @@ export const addPantryItem = async (req: AuthRequest, res: Response) => {
     .from('pantry_items')
     .insert({ name, quantity, unit, expiration_date: expiration_date || null, user_id: req.user!.id })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
   console.error("Add pantry insert error:", error);
@@ -66,7 +66,7 @@ export const updatePantryItem = async (req: AuthRequest, res: Response) => {
     .eq('id', id)
     .eq('user_id', req.user!.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);

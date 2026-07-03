@@ -106,7 +106,7 @@ export const getRecipe = async (req: AuthRequest, res: Response) => {
     .from('recipes')
     .select('*, profiles(username, first_name, last_name, avatar_url)')
     .eq('id', id)
-    .single();
+    .maybeSingle()
 
   if (error) return res.status(404).json({ error: 'Recipe not found' });
 
@@ -169,7 +169,7 @@ export const createRecipe = async (req: AuthRequest, res: Response) => {
       user_id: req.user!.id,
     })
     .select()
-    .single();
+    .maybeSingle()
 
   if (error) return res.status(500).json({ error: error.message });
 

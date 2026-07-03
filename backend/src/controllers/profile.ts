@@ -15,13 +15,21 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   const { first_name, last_name, avatar_url } = req.body;
+  const userId = req.user!.id;
 
   const { data, error } = await supabase
-    .from('profiles')
-    .update({ first_name, last_name, avatar_url })
-    .eq('id', req.user!.id)
+    .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        first_name,
+        last_name,
+        avatar_url,
+      },
+      { onConflict: "id" }
+    )
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
