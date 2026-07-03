@@ -59,8 +59,7 @@ export default function ResetPassword() {
         }}
       >
         <h1
-  onClick={async () => {
-    await supabase.auth.signOut();
+  onClick={() => {
     window.location.href = "/";
   }}
   style={{

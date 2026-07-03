@@ -34,8 +34,7 @@ export default function EmailVerified() {
           }}
         >
           <h1
-  onClick={async () => {
-    await supabase.auth.signOut();
+  onClick={() => {
     window.location.href = "/";
   }}
   style={{
