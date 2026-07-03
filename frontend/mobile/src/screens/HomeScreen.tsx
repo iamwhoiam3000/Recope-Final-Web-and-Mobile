@@ -14,6 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import api from "../lib/api";
 import { colors } from "../theme";
+import { Picker } from "@react-native-picker/picker";
 
 interface Recipe {
   id: string;
@@ -113,19 +114,15 @@ export default function HomeScreen() {
   return [];
 };
 
-const mealTypes = [
-  "All",
-  ...new Set(recipes.flatMap((r) => getMealTypes(r.meal_type))),
-];
+const mealTypes = ["All", "Breakfast", "Lunch", "Dinner", "Snacks", "Desserts"];
 
-const cuisines = [
-  "All",
-  ...new Set(recipes.map((r) => r.cuisine_type).filter(Boolean)),
-];
+const cuisines = ["All", "Beef", "Chicken", "Pork", "Seafood", "Vegetarian"];
 
 const durations = [
   "All",
-  ...new Set(recipes.map((r) => r.cook_duration).filter(Boolean)),
+  "Quick (under 30min)",
+  "Medium (30-60min)",
+  "Long (over 60min)",
 ];
 
   const filtered = recipes.filter((recipe) => {
@@ -205,9 +202,11 @@ const durations = [
       <View style={styles.cardImage}>
         {item.image_url ? (
           <Image
-            source={{ uri: item.image_url }}
-            style={{ width: "100%", height: "100%" }}
-          />
+  source={{ uri: item.image_url }}
+  style={{ width: "100%", height: "100%" }}
+  resizeMode="cover"
+  fadeDuration={0}
+/>
         ) : (
           <Text style={styles.cardEmoji}>🍽️</Text>
         )}
@@ -385,75 +384,50 @@ const SectionHeader = ({
         />
       }
       contentContainerStyle={{ paddingBottom: 100 }}
-onEndReached={() => {
-  if (!loadingMore && hasMore) {
-    setLoadingMore(true);
-    setPage((prev) => prev + 1);
-  }
-}}
-onEndReachedThreshold={0.4}
-ListFooterComponent={
-  loadingMore ? (
-    <ActivityIndicator
-      style={{ marginVertical: 20 }}
-      color={colors.primary}
-    />
-  ) : null
-}
+
 renderItem={({ item }: any) => {
         if (item.key === "search")
   return (
-    <View style={styles.searchContainer}>
-      <TextInput
-        style={styles.search}
-        placeholder="Search recipes..."
-        placeholderTextColor={colors.textMuted}
-        value={search}
-        onChangeText={setSearch}
-      />
+    <View style={styles.dropdownGroup}>
+  <Text style={styles.dropdownLabel}>Meal Type</Text>
+  <View style={styles.pickerBox}>
+    <Picker
+      selectedValue={mealFilter}
+      onValueChange={(value) => setMealFilter(String(value))}
+      style={styles.picker}
+    >
+      {mealTypes.map((type) => (
+        <Picker.Item key={type} label={type === "All" ? "All meal types" : type} value={type} />
+      ))}
+    </Picker>
+  </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {mealTypes.map((type) => (
-          <TouchableOpacity
-            key={`meal-${type}`}
-            style={[styles.filterChip, mealFilter === type && styles.filterChipActive]}
-            onPress={() => setMealFilter(type)}
-          >
-            <Text style={[styles.filterChipText, mealFilter === type && styles.filterChipTextActive]}>
-              {type === "All" ? "Meal" : type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+  <Text style={styles.dropdownLabel}>Cuisine</Text>
+  <View style={styles.pickerBox}>
+    <Picker
+      selectedValue={cuisineFilter}
+      onValueChange={(value) => setCuisineFilter(String(value))}
+      style={styles.picker}
+    >
+      {cuisines.map((type) => (
+        <Picker.Item key={type} label={type === "All" ? "All cuisines" : type} value={type} />
+      ))}
+    </Picker>
+  </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {cuisines.map((type) => (
-          <TouchableOpacity
-            key={`cuisine-${type}`}
-            style={[styles.filterChip, cuisineFilter === type && styles.filterChipActive]}
-            onPress={() => setCuisineFilter(type)}
-          >
-            <Text style={[styles.filterChipText, cuisineFilter === type && styles.filterChipTextActive]}>
-              {type === "All" ? "Cuisine" : type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {durations.map((type) => (
-          <TouchableOpacity
-            key={`duration-${type}`}
-            style={[styles.filterChip, durationFilter === type && styles.filterChipActive]}
-            onPress={() => setDurationFilter(type)}
-          >
-            <Text style={[styles.filterChipText, durationFilter === type && styles.filterChipTextActive]}>
-              {type === "All" ? "Duration" : type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+  <Text style={styles.dropdownLabel}>Cook Duration</Text>
+  <View style={styles.pickerBox}>
+    <Picker
+      selectedValue={durationFilter}
+      onValueChange={(value) => setDurationFilter(String(value))}
+      style={styles.picker}
+    >
+      {durations.map((type) => (
+        <Picker.Item key={type} label={type === "All" ? "All durations" : type} value={type} />
+      ))}
+    </Picker>
+  </View>
+</View>
   );
 
         if (item.key === "create")
@@ -566,6 +540,29 @@ filterChipText: {
 },
 filterChipTextActive: {
   color: colors.white,
+},
+dropdownGroup: {
+  marginTop: 12,
+  gap: 8,
+},
+
+dropdownLabel: {
+  fontSize: 13,
+  fontWeight: "600",
+  color: colors.textSecondary,
+},
+
+pickerBox: {
+  borderWidth: 1,
+  borderColor: colors.border,
+  borderRadius: 10,
+  backgroundColor: colors.white,
+  overflow: "hidden",
+},
+
+picker: {
+  height: 48,
+  color: colors.textPrimary,
 },
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   search: {

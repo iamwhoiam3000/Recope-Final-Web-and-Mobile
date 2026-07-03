@@ -146,7 +146,11 @@ export default function CreateRecipeScreen() {
       return;
     }
 
-    navigation.navigate("RecipeDetail", { id: isEditing ? editId : data.id });
+    if (isEditing) {
+  navigation.navigate("Main", { screen: "Home" });
+} else {
+  navigation.navigate("RecipeDetail", { id: data.id });
+}
   };
 
   if (fetching)

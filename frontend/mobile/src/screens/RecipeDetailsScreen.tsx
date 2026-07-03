@@ -196,7 +196,12 @@ export default function RecipeDetailScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={styles.hero}>
           {recipe.image_url ? (
-            <Image source={{ uri: recipe.image_url }} style={styles.heroImage} />
+            <Image
+  source={{ uri: recipe.image_url }}
+  style={styles.heroImage}
+  resizeMode="cover"
+  fadeDuration={0}
+/>
           ) : (
             <Text style={styles.heroEmoji}>🍽️</Text>
           )}
