@@ -100,8 +100,7 @@ if (error) {
   style={{
   display: "flex",
   minHeight: "100vh",
-  maxWidth: 1100,
-  margin: "0 auto",
+  width: "100vw",
   fontFamily: "sans-serif",
 }}
 >
