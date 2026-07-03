@@ -211,6 +211,7 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email-verified" element={<EmailVerified />} />
 

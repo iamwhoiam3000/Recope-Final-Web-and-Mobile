@@ -60,9 +60,11 @@ export default function ResetPassword() {
       >
         <h1
   onClick={() => {
-    window.location.href = "/";
+    window.location.href = "/login";
   }}
   style={{
+    textAlign: "center",
+    width: "100%",
     color: GREEN.primary,
     fontSize: 36,
     fontWeight: 800,
