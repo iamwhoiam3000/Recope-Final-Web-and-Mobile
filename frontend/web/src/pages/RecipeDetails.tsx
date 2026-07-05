@@ -51,6 +51,7 @@ export default function RecipeDetail() {
   const [deleting, setDeleting] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [adjustedServings, setAdjustedServings] = useState<number>(1);
 
   const hasTrackedView = useRef(false);
 
@@ -70,6 +71,7 @@ export default function RecipeDetail() {
         setRecipe(data);
         setIngredients(data.ingredients || []);
         setSteps(data.steps || []);
+        setAdjustedServings(data.servings || 1);
       }
 
       setLoading(false);
@@ -142,6 +144,44 @@ const handleCookRecipe = async () => {
       return `${profiles.first_name} ${profiles.last_name || ""}`.trim();
     return profiles.username || "Unknown";
   };
+
+  const parseAmount = (value: string): number | null => {
+  if (!value) return null;
+
+  const str = String(value).trim();
+
+  if (str.includes(" ")) {
+    const [whole, fraction] = str.split(" ");
+    const parsedFraction = parseAmount(fraction);
+    return (Number(whole) || 0) + (parsedFraction || 0);
+  }
+
+  if (str.includes("/")) {
+    const [num, den] = str.split("/").map(Number);
+    if (!num || !den) return null;
+    return num / den;
+  }
+
+  const num = Number(str);
+  return isNaN(num) ? null : num;
+};
+
+const formatAmount = (value: number): string => {
+  if (Number.isInteger(value)) return String(value);
+
+  const rounded = Math.round(value * 100) / 100;
+  return String(rounded);
+};
+
+const getAdjustedAmount = (amount: string) => {
+  if (!recipe) return amount;
+
+  const parsed = parseAmount(amount);
+  if (parsed === null) return amount;
+
+  const ratio = adjustedServings / recipe.servings;
+  return formatAmount(parsed * ratio);
+};
 
   if (loading)
     return (
@@ -241,13 +281,50 @@ const handleCookRecipe = async () => {
       {/* DESCRIPTION */}
       <p style={{ color: "#666", marginTop: 10 }}>{recipe.description}</p>
 
+      {/* SERVING ADJUSTMENT */}
+<div
+  style={{
+    marginTop: 24,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: "#f0f7f4",
+    borderRadius: 12,
+    border: "1px solid #d0e8dc",
+  }}
+>
+  <h3 style={{ marginTop: 0 }}>Serving Adjustment</h3>
+
+  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <span>Original: {recipe.servings} serving(s)</span>
+
+    <label>
+      Adjust to:{" "}
+      <input
+        type="number"
+        min="1"
+        value={adjustedServings}
+        onChange={(e) =>
+          setAdjustedServings(Math.max(1, Number(e.target.value) || 1))
+        }
+        style={{
+          width: 70,
+          padding: 6,
+          borderRadius: 6,
+          border: "1px solid #ccc",
+        }}
+      />{" "}
+      serving(s)
+    </label>
+  </div>
+</div>
+
       {/* INGREDIENTS */}
       <h3>Ingredients</h3>
       {ingredients.map((ing) => (
         <div key={ing.id}>
-          {ing.amount} {ing.unit} {ing.name}
-        </div>
-      ))}
+          {getAdjustedAmount(ing.amount)} {ing.unit} {ing.name}
+          </div>
+        ))}
 
       {/* STEPS */}
       <h3>Steps</h3>
