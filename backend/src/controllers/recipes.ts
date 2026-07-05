@@ -324,30 +324,35 @@ export const cookRecipe = async (req: AuthRequest, res: Response) => {
 
   const deductions: any[] = [];
 
+  // STEP 1: Validate everything first. Do not deduct yet.
   for (const ingredient of ingredients) {
     const neededAmount = parseQuantity(ingredient.amount);
-
     if (Number.isNaN(neededAmount) || neededAmount <= 0) continue;
 
     const recipeIngredientName = normalizeIngredientName(ingredient.name);
-    
+
     const pantryItem = pantry?.find(
-  (p) => normalizeIngredientName(p.name) === recipeIngredientName
-);
+      (p) => normalizeIngredientName(p.name) === recipeIngredientName
+    );
 
     if (!pantryItem) {
-      return res.status(400).json({ error: `Missing ingredient: ${ingredient.name}` });
+      return res.status(400).json({
+        error: `Missing ingredient: ${ingredient.name}`,
+      });
     }
 
     const currentQuantity = parseQuantity(pantryItem.quantity);
 
     if (currentQuantity < neededAmount) {
-      return res.status(400).json({ error: `Not enough ${ingredient.name}` });
+      return res.status(400).json({
+        error: `Not enough ${ingredient.name}`,
+      });
     }
 
     const remainingQuantity = currentQuantity - neededAmount;
 
     deductions.push({
+      pantryItem,
       name: pantryItem.name,
       before: currentQuantity,
       used: neededAmount,
@@ -355,42 +360,45 @@ export const cookRecipe = async (req: AuthRequest, res: Response) => {
       unit: pantryItem.unit,
       removed: remainingQuantity <= 0,
     });
+  }
 
+  // STEP 2: Only deduct after all ingredients passed validation.
+  for (const item of deductions) {
     await supabase.from("pantry_history").insert({
-  user_id: req.user!.id,
-  recipe_id: id,
-  ingredient_name: pantryItem.name,
-  quantity_used: neededAmount,
-  activity: "used",
-});
+      user_id: req.user!.id,
+      recipe_id: id,
+      ingredient_name: item.name,
+      quantity_used: item.used,
+      activity: "used",
+    });
 
     const { error: logError } = await supabase
-  .from("pantry_usage_logs")
-  .insert({
-    user_id: req.user!.id,
-    recipe_id: id,
-    ingredient_name: pantryItem.name,
-    quantity_used: neededAmount,
-    unit: pantryItem.unit,
-  });
+      .from("pantry_usage_logs")
+      .insert({
+        user_id: req.user!.id,
+        recipe_id: id,
+        ingredient_name: item.name,
+        quantity_used: item.used,
+        unit: item.unit,
+      });
 
-if (logError) {
-  return res.status(500).json({ error: logError.message });
-}
+    if (logError) {
+      return res.status(500).json({ error: logError.message });
+    }
 
-    if (remainingQuantity <= 0) {
+    if (item.removed) {
       const { error: deleteError } = await supabase
         .from("pantry_items")
         .delete()
-        .eq("id", pantryItem.id)
+        .eq("id", item.pantryItem.id)
         .eq("user_id", req.user!.id);
 
       if (deleteError) return res.status(500).json({ error: deleteError.message });
     } else {
       const { error: updateError } = await supabase
         .from("pantry_items")
-        .update({ quantity: remainingQuantity })
-        .eq("id", pantryItem.id)
+        .update({ quantity: item.after })
+        .eq("id", item.pantryItem.id)
         .eq("user_id", req.user!.id);
 
       if (updateError) return res.status(500).json({ error: updateError.message });
@@ -399,6 +407,6 @@ if (logError) {
 
   res.json({
     message: "Recipe cooked successfully. Pantry updated.",
-    deductions,
+    deductions: deductions.map(({ pantryItem, ...rest }) => rest),
   });
 };

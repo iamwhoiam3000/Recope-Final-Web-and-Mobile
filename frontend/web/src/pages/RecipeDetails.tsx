@@ -76,32 +76,6 @@ export default function RecipeDetail() {
         setIngredients(data.ingredients || []);
         setSteps(data.steps || []);
         setNutritionLoading(true);
-
-const nutritionData = await api.post("/api/ai/nutrition", {
-  title: data.title,
-  servings: data.servings,
-  ingredients: data.ingredients || [],
-});
-
-if (!nutritionData.error) {
-  setNutrition(nutritionData);
-}
-
-setNutritionLoading(false);
-
-setSubstitutionsLoading(true);
-
-const substitutionsData = await api.post("/api/ai/substitutions", {
-  title: data.title,
-  ingredients: data.ingredients || [],
-});
-
-if (!substitutionsData.error) {
-  setSubstitutions(substitutionsData.substitutions || []);
-}
-
-setSubstitutionsLoading(false);
-        setAdjustedServings(data.servings || 1);
       }
 
       setLoading(false);
@@ -165,6 +139,49 @@ const handleCookRecipe = async () => {
   } catch (err) {
     console.error(err);
     alert("Something went wrong while cooking recipe");
+  }
+};
+
+const handleGenerateNutrition = async () => {
+  if (!recipe) return;
+
+  setNutritionLoading(true);
+
+  try {
+    const nutritionData = await api.post("/api/ai/nutrition", {
+      title: recipe.title,
+      servings: recipe.servings,
+      ingredients,
+    });
+
+    if (!nutritionData.error) {
+      setNutrition(nutritionData);
+    } else {
+      alert(nutritionData.error);
+    }
+  } finally {
+    setNutritionLoading(false);
+  }
+};
+
+const handleGenerateSubstitutions = async () => {
+  if (!recipe) return;
+
+  setSubstitutionsLoading(true);
+
+  try {
+    const substitutionsData = await api.post("/api/ai/substitutions", {
+      title: recipe.title,
+      ingredients,
+    });
+
+    if (!substitutionsData.error) {
+      setSubstitutions(substitutionsData.substitutions || []);
+    } else {
+      alert(substitutionsData.error);
+    }
+  } finally {
+    setSubstitutionsLoading(false);
   }
 };
 
@@ -385,6 +402,22 @@ const getAdjustedAmount = (amount: string) => {
 >
   <h3 style={{ marginTop: 0 }}>Estimated Nutrition Per Serving</h3>
 
+  <button
+  onClick={handleGenerateNutrition}
+  disabled={nutritionLoading}
+  style={{
+    marginBottom: 12,
+    padding: "8px 14px",
+    backgroundColor: "#2d6a4f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  }}
+>
+  {nutritionLoading ? "Generating..." : "Generate Nutrition"}
+</button>
+
   {nutritionLoading ? (
     <p>Calculating nutrition...</p>
   ) : nutrition ? (
@@ -410,6 +443,22 @@ const getAdjustedAmount = (amount: string) => {
   }}
 >
   <h3 style={{ marginTop: 0 }}>💡 Alternative Ingredient Suggestions</h3>
+
+  <button
+  onClick={handleGenerateSubstitutions}
+  disabled={substitutionsLoading}
+  style={{
+    marginBottom: 12,
+    padding: "8px 14px",
+    backgroundColor: "#2d6a4f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  }}
+>
+  {substitutionsLoading ? "Generating..." : "Generate Suggestions"}
+</button>
 
   {substitutionsLoading ? (
     <p>Finding alternatives...</p>
