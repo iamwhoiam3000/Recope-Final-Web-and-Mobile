@@ -2,6 +2,26 @@ import { Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { AuthRequest } from '../middleware/auth';
 
+const parseQuantity = (value: any): number => {
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+
+  const str = String(value).trim();
+
+  if (str.includes(" ")) {
+    const [whole, fraction] = str.split(" ");
+    return (Number(whole) || 0) + parseQuantity(fraction);
+  }
+
+  if (str.includes("/")) {
+    const [num, den] = str.split("/").map(Number);
+    if (!num || !den) return 0;
+    return num / den;
+  }
+
+  return Number(str) || 0;
+};
+
 export const getPantry = async (req: AuthRequest, res: Response) => {
   const { data, error } = await supabase
     .from('pantry_items')
@@ -32,7 +52,7 @@ export const addPantryItem = async (req: AuthRequest, res: Response) => {
   const { error: historyError } = await supabase.from("pantry_history").insert({
   user_id: req.user!.id,
   ingredient_name: name,
-  quantity_added: Number(quantity) || 0,
+ quantity_added: parseQuantity(quantity),
   activity: "added",
 });
 
