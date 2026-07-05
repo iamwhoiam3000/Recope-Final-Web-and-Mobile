@@ -38,7 +38,7 @@ const [
 
     supabase
       .from("pantry_usage_logs")
-      .select("quantity_used, used_at"),
+      .select("ingredient_name, quantity_used, used_at"),
   ]);
 
   const totalUsers = usersResult.count || 0;
@@ -127,8 +127,17 @@ const [
 });
 
     if (key in foodWasteReductionByMonth) {
-      foodWasteReductionByMonth[key] += Number(log.quantity_used || 0);
-    }
+  const used = Number(log.quantity_used || 0);
+
+  foodWasteReductionByMonth[key] += used;
+  ingredientsUsedByMonth[key] += used;
+  totalIngredientsUsed += used;
+
+  if (log.ingredient_name) {
+    savedIngredientCount[log.ingredient_name] =
+      (savedIngredientCount[log.ingredient_name] || 0) + used;
+  }
+}
   });
 
   pantryHistoryLogs.forEach((log: any) => {
