@@ -145,10 +145,10 @@ Rules:
 
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2,
-      max_tokens: 500,
+      max_tokens: 200,
     });
 
     const text = completion.choices[0]?.message?.content || "";
@@ -212,10 +212,10 @@ Rules:
 
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4,
-      max_tokens: 700,
+      max_tokens: 250,
     });
 
     const text = completion.choices[0]?.message?.content || "";
