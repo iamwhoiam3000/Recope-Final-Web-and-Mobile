@@ -35,6 +35,8 @@ export default function RecipeDetailScreen() {
   const [adjustedServings, setAdjustedServings] = useState<number>(1);
   const [nutrition, setNutrition] = useState<any>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
+  const [substitutions, setSubstitutions] = useState<any[]>([]);
+  const [substitutionsLoading, setSubstitutionsLoading] = useState(false);
 
   const fetchRecipe = async () => {
     setLoading(true);
@@ -57,6 +59,19 @@ export default function RecipeDetailScreen() {
   }
 
   setNutritionLoading(false);
+
+  setSubstitutionsLoading(true);
+
+const substitutionsData = await api.post("/api/ai/substitutions", {
+  title: data.title,
+  ingredients: data.ingredients || [],
+});
+
+if (!substitutionsData.error) {
+  setSubstitutions(substitutionsData.substitutions || []);
+}
+
+setSubstitutionsLoading(false);
 }
 
     const favs = await api.get("/api/favorites");
@@ -403,6 +418,41 @@ const getAdjustedAmount = (amount: string) => {
               </View>
             ))}
           </View>
+
+          <View style={styles.section}>
+  <Text style={styles.sectionTitle}>
+    💡 Alternative Ingredient Suggestions
+  </Text>
+
+  {substitutionsLoading ? (
+    <Text>Finding alternatives...</Text>
+  ) : substitutions.length > 0 ? (
+    substitutions.map((item: any, index: number) => (
+      <View key={index} style={{ marginBottom: 12 }}>
+        <Text style={{ fontWeight: "700", color: colors.textPrimary }}>
+          {item.ingredient}
+        </Text>
+
+        <Text style={{ color: colors.textSecondary }}>
+          Try: {item.alternatives?.join(", ")}
+        </Text>
+      </View>
+    ))
+  ) : (
+    <Text>No substitution suggestions available.</Text>
+  )}
+
+  <Text
+    style={{
+      marginTop: 8,
+      fontSize: 12,
+      color: colors.textMuted,
+      fontStyle: "italic",
+    }}
+  >
+    AI-generated substitution suggestions.
+  </Text>
+</View>
 
           <View style={styles.section}>
   <Text style={styles.sectionTitle}>Serving Adjustment</Text>
