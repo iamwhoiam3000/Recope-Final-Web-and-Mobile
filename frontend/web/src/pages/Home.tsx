@@ -330,7 +330,7 @@ useEffect(() => {
       </h3>
 
       {/* Rating */}
-      {recipe.avg_rating > 0 && (
+      {Number(recipe.avg_rating) > 0 && (
         <div
           style={{
             display: "flex",
@@ -344,10 +344,10 @@ useEffect(() => {
             {"☆".repeat(5 - Math.round(recipe.avg_rating))}
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b" }}>
-            {Number(recipe.avg_rating).toFixed(1)}
+            {Number(recipe.avg_rating || 0).toFixed(1)}
           </span>
           <span style={{ fontSize: 12, color: "#999" }}>
-            ({recipe.review_count})
+            ({recipe.review_count || 0})
           </span>
         </div>
       )}
