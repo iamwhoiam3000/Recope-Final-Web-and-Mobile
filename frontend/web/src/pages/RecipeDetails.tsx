@@ -75,7 +75,8 @@ export default function RecipeDetail() {
         setRecipe(data);
         setIngredients(data.ingredients || []);
         setSteps(data.steps || []);
-        setNutritionLoading(true);
+        setAdjustedServings(data.servings || 1);
+        setNutritionLoading(false);
       }
 
       setLoading(false);
@@ -365,83 +366,86 @@ const getAdjustedAmount = (amount: string) => {
       {/* DESCRIPTION */}
       <p style={{ color: "#666", marginTop: 10 }}>{recipe.description}</p>
 
-      {/* SERVING ADJUSTMENT */}
+      {/* NUTRITION */}
+
 <div
+
   style={{
+
     marginTop: 24,
+
     marginBottom: 20,
+
     padding: 16,
-    backgroundColor: "#f0f7f4",
-    borderRadius: 12,
-    border: "1px solid #d0e8dc",
-  }}
->
-  <h3 style={{ marginTop: 0 }}>Serving Adjustment</h3>
 
-  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-    <span>Original: {recipe.servings} serving(s)</span>
-
-    <label>
-      Adjust to:{" "}
-      <input
-        type="number"
-        min="1"
-        value={adjustedServings}
-        onChange={(e) =>
-          setAdjustedServings(Math.max(1, Number(e.target.value) || 1))
-        }
-        style={{
-          width: 70,
-          padding: 6,
-          borderRadius: 6,
-          border: "1px solid #ccc",
-        }}
-      />{" "}
-      serving(s)
-    </label>
-  </div>
-</div>
-
-{/* NUTRITION */}
-<div
-  style={{
-    marginTop: 24,
-    marginBottom: 20,
-    padding: 16,
     backgroundColor: "#fff7ed",
+
     borderRadius: 12,
+
     border: "1px solid #fed7aa",
+
   }}
+
 >
+
   <h3 style={{ marginTop: 0 }}>Estimated Nutrition Per Serving</h3>
 
+
+
   <button
+
   onClick={handleGenerateNutrition}
+
   style={{
+
     marginBottom: 12,
+
     padding: "8px 14px",
+
     backgroundColor: "#2d6a4f",
+
     color: "#fff",
+
     border: "none",
+
     borderRadius: 8,
+
     cursor: "pointer",
+
   }}
+
 >
+
   Generate Nutrition
+
 </button>
 
+
+
   {nutritionLoading ? (
+
     <p>Calculating nutrition...</p>
+
   ) : nutrition ? (
+
     <div>
+
       <p>🔥 Calories: {nutrition.calories} kcal</p>
+
       <p>🥩 Protein: {nutrition.protein} g</p>
+
       <p>🥑 Fat: {nutrition.fat} g</p>
+
       <p>🍚 Carbohydrates: {nutrition.carbohydrates} g</p>
+
     </div>
+
   ) : (
+
     <p>No nutrition data available.</p>
+
   )}
+
 </div>
 
 <div
@@ -486,6 +490,43 @@ const getAdjustedAmount = (amount: string) => {
   ) : (
     <p>No substitution suggestions available.</p>
   )}
+</div>
+
+      {/* SERVING ADJUSTMENT */}
+<div
+  style={{
+    marginTop: 24,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: "#f0f7f4",
+    borderRadius: 12,
+    border: "1px solid #d0e8dc",
+  }}
+>
+  <h3 style={{ marginTop: 0 }}>Serving Adjustment</h3>
+
+  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <span>Original: {recipe.servings} serving(s)</span>
+
+    <label>
+      Adjust to:{" "}
+      <input
+        type="number"
+        min="1"
+        value={adjustedServings}
+        onChange={(e) =>
+          setAdjustedServings(Math.max(1, Number(e.target.value) || 1))
+        }
+        style={{
+          width: 70,
+          padding: 6,
+          borderRadius: 6,
+          border: "1px solid #ccc",
+        }}
+      />{" "}
+      serving(s)
+    </label>
+  </div>
 </div>
 
       {/* INGREDIENTS */}
