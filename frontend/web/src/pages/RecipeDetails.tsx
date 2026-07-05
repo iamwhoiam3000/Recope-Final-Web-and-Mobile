@@ -366,6 +366,42 @@ const getAdjustedAmount = (amount: string) => {
       {/* DESCRIPTION */}
       <p style={{ color: "#666", marginTop: 10 }}>{recipe.description}</p>
 
+      {/* META CARDS */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 24,
+  }}
+>
+  {[
+    { label: "Prep", value: `${recipe.prep_time}min` },
+    { label: "Cook", value: `${recipe.cook_time}min` },
+    { label: "Serves", value: recipe.servings },
+    { label: "Views", value: recipe.view_count || 0 },
+  ].map((item) => (
+    <div
+      key={item.label}
+      style={{
+        backgroundColor: "#f0f7f4",
+        border: "1px solid #d0e8dc",
+        borderRadius: 12,
+        padding: 14,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ fontSize: 20, fontWeight: 700, color: "#2d6a4f" }}>
+        {item.value}
+      </div>
+      <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
+        {item.label}
+      </div>
+    </div>
+  ))}
+</div>
+
       {/* NUTRITION */}
 
 <div
