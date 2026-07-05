@@ -33,15 +33,31 @@ export default function RecipeDetailScreen() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [cooking, setCooking] = useState(false);
   const [adjustedServings, setAdjustedServings] = useState<number>(1);
+  const [nutrition, setNutrition] = useState<any>(null);
+  const [nutritionLoading, setNutritionLoading] = useState(false);
 
   const fetchRecipe = async () => {
     setLoading(true);
 
     const data = await api.get(`/api/recipes/${id}`);
     if (data.id) {
-      setRecipe(data);
-      setAdjustedServings(data.servings || 1);
-    }
+  setRecipe(data);
+  setAdjustedServings(data.servings || 1);
+
+  setNutritionLoading(true);
+
+  const nutritionData = await api.post("/api/ai/nutrition", {
+    title: data.title,
+    servings: data.servings,
+    ingredients: data.ingredients || [],
+  });
+
+  if (!nutritionData.error) {
+    setNutrition(nutritionData);
+  }
+
+  setNutritionLoading(false);
+}
 
     const favs = await api.get("/api/favorites");
     if (Array.isArray(favs)) {
@@ -343,6 +359,36 @@ const getAdjustedAmount = (amount: string) => {
           )}
 
           <Text style={styles.description}>{recipe.description}</Text>
+
+          <View style={styles.section}>
+  <Text style={styles.sectionTitle}>
+    🍎 Estimated Nutrition (Per Serving)
+  </Text>
+
+  {nutritionLoading ? (
+    <Text>Calculating nutrition...</Text>
+  ) : nutrition ? (
+    <>
+      <Text>🔥 Calories: {nutrition.calories} kcal</Text>
+      <Text>🥩 Protein: {nutrition.protein} g</Text>
+      <Text>🥑 Fat: {nutrition.fat} g</Text>
+      <Text>🍚 Carbohydrates: {nutrition.carbohydrates} g</Text>
+    </>
+  ) : (
+    <Text>No nutrition data available.</Text>
+  )}
+
+  <Text
+    style={{
+      marginTop: 8,
+      fontSize: 12,
+      color: colors.textMuted,
+      fontStyle: "italic",
+    }}
+  >
+    *Estimated using AI from the recipe ingredients.
+  </Text>
+</View>
 
           <View style={styles.metaRow}>
             {[
