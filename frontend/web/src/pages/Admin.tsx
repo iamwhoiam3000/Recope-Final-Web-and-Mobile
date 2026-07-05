@@ -35,25 +35,28 @@ const COLORS = [
 ];
 
 export default function Admin() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAdmin) {
-      navigate("/");
-      return;
-    }
+    if (authLoading) return;
+
+if (!isAdmin) {
+  navigate("/");
+  return;
+}
     const fetchData = async () => {
       const result = await api.get("/api/admin/analytics");
       if (!result.error) setData(result);
       setLoading(false);
     };
     fetchData();
-  }, [isAdmin, navigate]);
+  }, [authLoading, isAdmin, navigate]);
 
-  if (!isAdmin) return null;
+  if (authLoading) return null;
+if (!isAdmin) return null;
   if (loading)
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
