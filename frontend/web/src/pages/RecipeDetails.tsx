@@ -105,46 +105,31 @@ export default function RecipeDetail() {
   // ============================
 const handleCookRecipe = async () => {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const data = await api.post(`/api/recipes/${id}/cook`, {});
 
-    const res = await fetch(
-      `http://localhost:4000/api/recipes/${id}/cook`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
+    if (data.error) {
       alert(data.error || "Failed to cook recipe");
       return;
     }
 
     const deductionText =
-  data.deductions?.length > 0
-    ? data.deductions
-        .map((item: any) =>
-          item.removed
-            ? `• ${item.name}: ${item.before} ${item.unit || ""} → removed from pantry`
-            : `• ${item.name}: ${item.before} → ${item.after} ${item.unit || ""}`
-        )
-        .join("\n")
-    : "";
+      data.deductions?.length > 0
+        ? data.deductions
+            .map((item: any) =>
+              item.removed
+                ? `• ${item.name}: ${item.before} ${item.unit || ""} → removed from pantry`
+                : `• ${item.name}: ${item.before} → ${item.after} ${item.unit || ""}`
+            )
+            .join("\n")
+        : "";
 
-alert(
-  `✅ ${data.message || "Recipe cooked successfully!"}${
-    deductionText ? `\n\nPantry updated:\n${deductionText}` : ""
-  }`
-);
+    alert(
+      `✅ ${data.message || "Recipe cooked successfully!"}${
+        deductionText ? `\n\nPantry updated:\n${deductionText}` : ""
+      }`
+    );
 
-navigate("/pantry");
+    navigate("/pantry");
   } catch (err) {
     console.error(err);
     alert("Something went wrong while cooking recipe");
