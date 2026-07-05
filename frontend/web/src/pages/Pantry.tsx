@@ -13,6 +13,7 @@ const UNITS = [
   "pcs",
   "g",
   "kg",
+  "mg",
   "ml",
   "L",
   "tsp",
@@ -29,6 +30,15 @@ const UNITS = [
   "slice",
   "clove",
   "bunch",
+  "pound",
+  "lb",
+  "oz",
+  "leaves",
+  "ears",
+  "sheets",
+  "block",
+  "piece",
+  "whole",
 ];
 
 // How many days before expiry to warn the user
