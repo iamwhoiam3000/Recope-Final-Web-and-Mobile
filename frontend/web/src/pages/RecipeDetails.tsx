@@ -547,19 +547,25 @@ const getAdjustedAmount = (amount: string) => {
     <label>
       Adjust to:{" "}
       <input
-        type="number"
-        min="1"
-        value={adjustedServings}
-        onChange={(e) =>
-          setAdjustedServings(Math.max(1, Number(e.target.value) || 1))
-        }
-        style={{
-          width: 70,
-          padding: 6,
-          borderRadius: 6,
-          border: "1px solid #ccc",
-        }}
-      />{" "}
+  type="number"
+  min="1"
+  value={adjustedServings}
+  onChange={(e) => {
+    const value = e.target.value;
+
+    if (value === "") {
+      setAdjustedServings("" as any);
+      return;
+    }
+
+    setAdjustedServings(Math.max(1, Number(value)));
+  }}
+  onBlur={() => {
+    if (!adjustedServings || Number(adjustedServings) < 1) {
+      setAdjustedServings(1);
+    }
+  }}
+/>{" "}
       serving(s)
     </label>
   </div>

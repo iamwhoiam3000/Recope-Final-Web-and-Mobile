@@ -520,18 +520,19 @@ const getAdjustedAmount = (amount: string) => {
       value={String(adjustedServings)}
       keyboardType="number-pad"
       onChangeText={(text) => {
-        const value = Number(text);
-        setAdjustedServings(value > 0 ? value : 1);
-      }}
-      style={{
-        width: 70,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        padding: 8,
-        textAlign: "center",
-        color: colors.textPrimary,
-      }}
+  if (text === "") {
+    setAdjustedServings("" as any);
+    return;
+  }
+
+  const value = Number(text);
+  setAdjustedServings(value > 0 ? value : 1);
+}}
+onBlur={() => {
+  if (!adjustedServings || Number(adjustedServings) < 1) {
+    setAdjustedServings(1);
+  }
+}}
     />
 
     <Text style={{ color: colors.textPrimary }}>serving(s)</Text>
