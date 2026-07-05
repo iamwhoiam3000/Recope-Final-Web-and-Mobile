@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  TextInput,
 } from "react-native";
 import {
   useNavigation,
@@ -31,12 +32,16 @@ export default function RecipeDetailScreen() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [cooking, setCooking] = useState(false);
+  const [adjustedServings, setAdjustedServings] = useState<number>(1);
 
   const fetchRecipe = async () => {
     setLoading(true);
 
     const data = await api.get(`/api/recipes/${id}`);
-    if (data.id) setRecipe(data);
+    if (data.id) {
+      setRecipe(data);
+      setAdjustedServings(data.servings || 1);
+    }
 
     const favs = await api.get("/api/favorites");
     if (Array.isArray(favs)) {
@@ -159,6 +164,68 @@ export default function RecipeDetailScreen() {
       ],
     );
   };
+
+  const parseAmount = (value: string): number | null => {
+  if (!value) return null;
+
+  const str = String(value).trim();
+
+  if (str.includes(" ")) {
+    const [whole, fraction] = str.split(" ");
+    const parsedFraction = parseAmount(fraction);
+    return (Number(whole) || 0) + (parsedFraction || 0);
+  }
+
+  if (str.includes("/")) {
+    const [num, den] = str.split("/").map(Number);
+    if (!num || !den) return null;
+    return num / den;
+  }
+
+  const num = Number(str);
+  return isNaN(num) ? null : num;
+};
+
+const formatAmount = (value: number): string => {
+  const rounded = Math.round(value * 1000) / 1000;
+
+  const whole = Math.floor(rounded);
+  const decimal = Math.round((rounded - whole) * 1000) / 1000;
+
+  const fractions: Record<string, string> = {
+    "0.125": "1/8",
+    "0.25": "1/4",
+    "0.333": "1/3",
+    "0.375": "3/8",
+    "0.5": "1/2",
+    "0.625": "5/8",
+    "0.667": "2/3",
+    "0.75": "3/4",
+    "0.875": "7/8",
+  };
+
+  const key = decimal.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+
+  if (fractions[key]) {
+    return whole > 0 ? `${whole} ${fractions[key]}` : fractions[key];
+  }
+
+  if (Number.isInteger(rounded)) {
+    return String(rounded);
+  }
+
+  return rounded.toFixed(2).replace(/\.00$/, "").replace(/0$/, "");
+};
+
+const getAdjustedAmount = (amount: string) => {
+  if (!recipe) return amount;
+
+  const parsed = parseAmount(amount);
+  if (parsed === null) return amount;
+
+  const ratio = adjustedServings / recipe.servings;
+  return formatAmount(parsed * ratio);
+};
 
   if (loading)
     return (
@@ -292,13 +359,45 @@ export default function RecipeDetailScreen() {
           </View>
 
           <View style={styles.section}>
+  <Text style={styles.sectionTitle}>Serving Adjustment</Text>
+
+  <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>
+    Original: {recipe.servings} serving(s)
+  </Text>
+
+  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+    <Text style={{ color: colors.textPrimary }}>Adjust to:</Text>
+
+    <TextInput
+      value={String(adjustedServings)}
+      keyboardType="number-pad"
+      onChangeText={(text) => {
+        const value = Number(text);
+        setAdjustedServings(value > 0 ? value : 1);
+      }}
+      style={{
+        width: 70,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        padding: 8,
+        textAlign: "center",
+        color: colors.textPrimary,
+      }}
+    />
+
+    <Text style={{ color: colors.textPrimary }}>serving(s)</Text>
+  </View>
+</View>
+
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Ingredients</Text>
 
             {recipe.ingredients?.map((ing: any) => (
               <View key={ing.id} style={styles.ingredientRow}>
                 <View style={styles.ingredientDot} />
                 <Text style={styles.ingredientAmount}>
-                  {ing.amount} {ing.unit}
+                  {getAdjustedAmount(ing.amount)} {ing.unit}
                 </Text>
                 <Text style={styles.ingredientName}>{ing.name}</Text>
               </View>
