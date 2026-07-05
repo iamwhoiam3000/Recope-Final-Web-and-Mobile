@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const LIMIT = 10;
+  const LIMIT = 1000;
 
   const fetchData = async () => {
     const [recipesData, matchedData, favoritesData] = await Promise.all([
@@ -354,15 +354,15 @@ const SectionHeader = ({
 
         { key: "divider" },
 
-        { key: "recent_header" },
-        ...recentRecipes
-          .slice(0, recentLimit)
-          .map((r) => ({ key: `recent_${r.id}`, recipe: r })),
-
         { key: "popular_header" },
         ...popularRecipes
           .slice(0, popularLimit)
           .map((r) => ({ key: `popular_${r.id}`, recipe: r })),
+
+        { key: "recent_header" },
+        ...recentRecipes
+          .slice(0, recentLimit)
+          .map((r) => ({ key: `recent_${r.id}`, recipe: r })),
       ]),
 ];
 
