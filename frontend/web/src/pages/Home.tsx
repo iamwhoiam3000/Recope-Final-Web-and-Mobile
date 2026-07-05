@@ -18,6 +18,7 @@ interface Recipe {
   created_at: string;
   avg_rating: number;
   review_count: number;
+  reviews?: { rating: number }[];
   profiles: {
     username: string;
     first_name: string;
@@ -330,8 +331,17 @@ useEffect(() => {
       </h3>
 
       <div style={{ color: "#f59e0b", fontSize: 14, marginBottom: 8 }}>
-        ★ {Number(recipe.avg_rating || 0).toFixed(1)} ({recipe.review_count || 0})
-        </div>
+  {(() => {
+    const reviews = recipe.reviews || [];
+    const count = reviews.length;
+    const avg =
+      count > 0
+        ? reviews.reduce((sum: number, r: any) => sum + Number(r.rating || 0), 0) / count
+        : 0;
+
+    return `★ ${avg.toFixed(1)} (${count})`;
+  })()}
+</div>
 
       {/* Rating */}
       {recipe.avg_rating > 0 && (
