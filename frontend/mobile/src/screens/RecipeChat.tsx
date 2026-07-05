@@ -51,7 +51,7 @@ export default function RecipeChat() {
         {
           role: "assistant",
           content:
-            "Hi! I'm your Recope AI 🍳 I can generate any recipe or suggest ones based on your pantry. What would you like to cook?",
+            "Hi! I'm your ReCopé AI 🍳 I can generate any recipe or suggest ones based on your pantry. What would you like to cook?",
         },
       ]);
     }
@@ -197,7 +197,7 @@ const handleSaveRecipe = async (recipe: any) => {
   ? "Saved"
   : saving
     ? "Saving..."
-    : "+ Save to Recope"}
+    : "+ Save to ReCopé"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -232,7 +232,7 @@ const handleSaveRecipe = async (recipe: any) => {
             {/* Header */}
             <View style={styles.header}>
               <View>
-                <Text style={styles.headerTitle}>🤖 Recope AI</Text>
+                <Text style={styles.headerTitle}>🤖 ReCopé AI</Text>
                 <Text style={styles.headerSub}>
                   Generate any recipe · Uses your pantry
                 </Text>

@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (_, res) => {
-  res.json({ status: 'ok', app: 'recope' });
+  res.json({ status: 'ok', app: 'ReCopé' });
 });
 
 app.use('/api/recipes', recipeRoutes);
@@ -33,5 +33,5 @@ app.use("/api/favorites", favoriteRoutes);
 
 
 app.listen(PORT, () => {
-  console.log(`Recope backend running on http://localhost:${PORT}`);
+  console.log(`ReCopé backend running on http://localhost:${PORT}`);
 });

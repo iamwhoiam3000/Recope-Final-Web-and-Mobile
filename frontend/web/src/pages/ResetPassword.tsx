@@ -34,7 +34,7 @@ export default function ResetPassword() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: GREEN.light, fontFamily: "sans-serif" }}>
         <div style={{ background: "#fff", padding: "50px 60px", borderRadius: 18, boxShadow: "0 8px 25px rgba(0,0,0,0.08)", textAlign: "center", maxWidth: 500 }}>
-          <h1 style={{ color: GREEN.primary, fontSize: 36, fontWeight: 800, marginBottom: 30 }}>ReCope</h1>
+          <h1 style={{ color: GREEN.primary, fontSize: 36, fontWeight: 800, marginBottom: 30 }}>ReCopé</h1>
           <h2 style={{ color: GREEN.primary, marginBottom: 15 }}>Password Updated Successfully!</h2>
           <p style={{ color: "#666", fontSize: 15 }}>You can now sign in with your new password.</p>
         </div>
@@ -45,7 +45,7 @@ export default function ResetPassword() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: GREEN.light }}>
       <form onSubmit={handleReset} style={{ width: 360, background: "#fff", padding: 32, borderRadius: 16, border: `1px solid ${GREEN.mid}` }}>
-        <h1 style={{ color: GREEN.primary, fontSize: 36, fontWeight: 800, marginBottom: 30, textAlign: "center" }}>ReCope</h1>
+        <h1 style={{ color: GREEN.primary, fontSize: 36, fontWeight: 800, marginBottom: 30, textAlign: "center" }}>ReCopé</h1>
         <h2 style={{ color: GREEN.primary, textAlign: "center", marginBottom: 20 }}>Reset Password</h2>
 
         {message && <p style={{ marginBottom: 12, color: "#d32f2f", textAlign: "center" }}>{message}</p>}

@@ -19,7 +19,7 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
     `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ''}`
   ).join(', ') || 'empty';
 
-  const systemPrompt = `You are Recope's AI recipe assistant. You help users generate delicious recipes.
+  const systemPrompt = `You are ReCopé's AI recipe assistant. You help users generate delicious recipes.
 
 The user's pantry currently contains: ${pantryList}
 

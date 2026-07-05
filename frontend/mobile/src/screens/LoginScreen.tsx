@@ -97,7 +97,7 @@ if (error) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.card}>
-        <Text style={styles.logo}>Recope</Text>
+        <Text style={styles.logo}>ReCopé</Text>
         <Text style={styles.subtitle}>
           {isSignUp ? "Create your account" : "Welcome back"}
         </Text>

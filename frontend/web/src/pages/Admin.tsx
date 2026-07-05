@@ -234,7 +234,7 @@ if (!isAdmin) return null;
           📊 Admin Dashboard
         </h2>
         <p style={{ color: "#999", fontSize: 15 }}>
-          Overview of Recope analytics
+          Overview of ReCopé analytics
         </p>
       </div>
 
@@ -308,7 +308,7 @@ if (!isAdmin) return null;
 >
   <h3 style={{ marginBottom: 8 }}>🌱 Food Waste Reduction Insight</h3>
   <p style={{ color: "#555", fontSize: 14, lineHeight: 1.6 }}>
-    ReCope recorded {data.totalIngredientsUsed || 0} ingredients used from the
+    ReCopé recorded {data.totalIngredientsUsed || 0} ingredients used from the
     pantry, with an estimated food waste reduction rate of{" "}
     {data.foodWasteReductionRate || 0}%.
   </p>

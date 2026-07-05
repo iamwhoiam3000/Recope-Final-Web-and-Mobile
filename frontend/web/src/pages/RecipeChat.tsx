@@ -42,7 +42,7 @@ export default function RecipeChat() {
         {
           role: "assistant",
           content:
-            "Hi! I'm your Recope AI assistant 🍳 I can generate any recipe you want, or suggest recipes based on your pantry. What would you like to cook today?",
+            "Hi! I'm your ReCopé AI assistant 🍳 I can generate any recipe you want, or suggest recipes based on your pantry. What would you like to cook today?",
         },
       ]);
     }
@@ -214,7 +214,7 @@ export default function RecipeChat() {
                   fontWeight: 700,
                 }}
               >
-                🤖 Recope AI
+                🤖 ReCopé AI
               </h3>
               <p
                 style={{
@@ -348,7 +348,7 @@ export default function RecipeChat() {
                           cursor: "pointer",
                         }}
                       >
-                        {saving ? "Saving..." : "+ Save to Recope"}
+                        {saving ? "Saving..." : "+ Save to ReCopé"}
                       </button>
                     </div>
                   )}

@@ -36,7 +36,7 @@ export default function EmailVerified() {
           marginBottom: 30,
         }}
       >
-        ReCope
+        ReCopé
       </h1>
 
       <h2

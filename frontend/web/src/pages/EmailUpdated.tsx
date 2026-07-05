@@ -26,7 +26,7 @@ export default function EmailUpdated() {
         }}
       >
         <h1 style={{ color: GREEN.primary, fontSize: 36, fontWeight: 800, marginBottom: 30 }}>
-          ReCope
+          ReCopé
         </h1>
 
         <h2 style={{ color: GREEN.primary, marginBottom: 15 }}>

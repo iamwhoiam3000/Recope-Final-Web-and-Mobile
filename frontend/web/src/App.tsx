@@ -70,7 +70,7 @@ function Navbar() {
             letterSpacing: "-0.5px",
           }}
         >
-          ReCope
+          ReCopé
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button

@@ -35,7 +35,7 @@ function HomeTabs() {
         name="Home"
         component={HomeScreen}
         options={{
-          title: "ReCope",
+          title: "ReCopé",
           tabBarLabel: "Home",
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>🏠</Text>
