@@ -54,6 +54,8 @@ export default function RecipeDetail() {
   const [adjustedServings, setAdjustedServings] = useState<number>(1);
   const [nutrition, setNutrition] = useState<any>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
+  const [substitutions, setSubstitutions] = useState<any[]>([]);
+  const [substitutionsLoading, setSubstitutionsLoading] = useState(false);
 
   const hasTrackedView = useRef(false);
 
@@ -86,6 +88,19 @@ if (!nutritionData.error) {
 }
 
 setNutritionLoading(false);
+
+setSubstitutionsLoading(true);
+
+const substitutionsData = await api.post("/api/ai/substitutions", {
+  title: data.title,
+  ingredients: data.ingredients || [],
+});
+
+if (!substitutionsData.error) {
+  setSubstitutions(substitutionsData.substitutions || []);
+}
+
+setSubstitutionsLoading(false);
         setAdjustedServings(data.servings || 1);
       }
 
@@ -381,6 +396,34 @@ const getAdjustedAmount = (amount: string) => {
     </div>
   ) : (
     <p>No nutrition data available.</p>
+  )}
+</div>
+
+<div
+  style={{
+    marginTop: 20,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: "#f0f7ff",
+    borderRadius: 12,
+    border: "1px solid #bfdbfe",
+  }}
+>
+  <h3 style={{ marginTop: 0 }}>💡 Alternative Ingredient Suggestions</h3>
+
+  {substitutionsLoading ? (
+    <p>Finding alternatives...</p>
+  ) : substitutions.length > 0 ? (
+    substitutions.map((item: any, index: number) => (
+      <div key={index} style={{ marginBottom: 10 }}>
+        <b>{item.ingredient}</b>
+        <p style={{ margin: "4px 0", color: "#555" }}>
+          Try: {item.alternatives?.join(", ")}
+        </p>
+      </div>
+    ))
+  ) : (
+    <p>No substitution suggestions available.</p>
   )}
 </div>
 
