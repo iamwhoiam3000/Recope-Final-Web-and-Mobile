@@ -330,28 +330,26 @@ useEffect(() => {
       </h3>
 
       {/* Rating */}
-      {Number(recipe.avg_rating) > 0 && (
-<div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  }}
->
-  <span style={{ color: "#f59e0b", fontSize: 14 }}>
-    {"★".repeat(Math.round(Number(recipe.avg_rating || 0)))}
-    {"☆".repeat(5 - Math.round(Number(recipe.avg_rating || 0)))}
-  </span>
-
-  <span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b" }}>
-    {Number(recipe.avg_rating || 0).toFixed(1)}
-  </span>
-
-  <span style={{ fontSize: 12, color: "#999" }}>
-    ({recipe.review_count || 0})
-  </span>
-</div>
+      {recipe.avg_rating > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ color: "#f59e0b", fontSize: 14 }}>
+            {"★".repeat(Math.round(recipe.avg_rating))}
+            {"☆".repeat(5 - Math.round(recipe.avg_rating))}
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b" }}>
+            {Number(recipe.avg_rating).toFixed(1)}
+          </span>
+          <span style={{ fontSize: 12, color: "#999" }}>
+            ({recipe.review_count})
+          </span>
+        </div>
       )}
 
       {/* Description */}
