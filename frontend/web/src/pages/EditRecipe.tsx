@@ -50,8 +50,10 @@ export default function EditRecipe() {
       servings: parseInt(formData.servings) || 1,
       image_url: formData.imageUrl,
       meal_type: Array.isArray(formData.mealType)
-  ? formData.mealType[0] || ""
-  : formData.mealType || "",
+      ? formData.mealType
+      : formData.mealType
+      ? [formData.mealType]
+      : [],
       cuisine_type: formData.cuisineType,
       cook_duration: formData.cookDuration,
       ingredients: formData.ingredients.filter((i: any) => i.name),
