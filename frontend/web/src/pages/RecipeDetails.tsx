@@ -143,7 +143,14 @@ const handleCookRecipe = async () => {
 };
 
 const handleGenerateNutrition = async () => {
-  if (!recipe) return;
+  console.log("Generate Nutrition clicked");
+
+  if (!recipe) {
+    console.log("Recipe is null");
+    return;
+  }
+
+  console.log("Recipe:", recipe);
 
   setNutritionLoading(true);
 
