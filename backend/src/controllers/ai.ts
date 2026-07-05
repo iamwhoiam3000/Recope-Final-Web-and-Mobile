@@ -169,3 +169,69 @@ Rules:
     });
   }
 };
+
+export const generateSubstitutions = async (req: AuthRequest, res: Response) => {
+  const { title, ingredients } = req.body;
+
+  if (!ingredients || !Array.isArray(ingredients)) {
+    return res.status(400).json({
+      error: "Ingredients are required",
+    });
+  }
+
+  const ingredientList = ingredients
+    .map(
+      (ing: any) =>
+        `${ing.amount || ""} ${ing.unit || ""} ${ing.name || ""}`.trim()
+    )
+    .join(", ");
+
+  const prompt = `
+Suggest practical alternative ingredients for this recipe.
+
+Recipe: ${title || "Untitled Recipe"}
+Ingredients: ${ingredientList}
+
+Return ONLY raw JSON in this exact format:
+{
+  "substitutions": [
+    {
+      "ingredient": "Chicken",
+      "alternatives": ["Tofu", "Mushroom", "Turkey"]
+    }
+  ]
+}
+
+Rules:
+- Give substitutions only for main ingredients.
+- Give 2 to 3 alternatives per ingredient.
+- Keep alternatives practical and commonly available.
+- No markdown.
+- No explanation.
+`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4,
+      max_tokens: 700,
+    });
+
+    const text = completion.choices[0]?.message?.content || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    res.json({
+      substitutions: Array.isArray(parsed.substitutions)
+        ? parsed.substitutions
+        : [],
+    });
+  } catch (error: any) {
+    console.error("Substitution AI error:", error);
+    res.status(500).json({
+      error: "Failed to generate substitutions",
+      details: error.message,
+    });
+  }
+};
