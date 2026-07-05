@@ -2,6 +2,28 @@ import { Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { AuthRequest } from '../middleware/auth';
 
+const parseQuantity = (value: any): number => {
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+
+  const str = String(value).trim();
+
+  // Example: "1 1/2"
+  if (str.includes(" ")) {
+    const [whole, fraction] = str.split(" ");
+    return Number(whole) + parseQuantity(fraction);
+  }
+
+  // Example: "1/2", "1/4", "1/8"
+  if (str.includes("/")) {
+    const [num, den] = str.split("/").map(Number);
+    if (!num || !den) return 0;
+    return num / den;
+  }
+
+  return Number(str) || 0;
+};
+
 export const getPantry = async (req: AuthRequest, res: Response) => {
   const { data, error } = await supabase
     .from('pantry_items')
@@ -20,25 +42,31 @@ export const addPantryItem = async (req: AuthRequest, res: Response) => {
 
   const { data, error } = await supabase
     .from('pantry_items')
-    .insert({ name, quantity, unit, expiration_date: expiration_date || null, user_id: req.user!.id })
+    .insert({
+      name,
+      quantity,
+      unit,
+      expiration_date: expiration_date || null,
+      user_id: req.user!.id,
+    })
     .select()
     .maybeSingle();
 
   if (error) {
-  console.error("Add pantry insert error:", error);
-  return res.status(500).json({ error: error.message });
-}
+    console.error("Add pantry insert error:", error);
+    return res.status(500).json({ error: error.message });
+  }
 
   const { error: historyError } = await supabase.from("pantry_history").insert({
-  user_id: req.user!.id,
-  ingredient_name: name,
-  quantity_added: Number(quantity) || 0,
-  activity: "added",
-});
+    user_id: req.user!.id,
+    ingredient_name: name,
+    quantity_added: parseQuantity(quantity),
+    activity: "added",
+  });
 
-if (historyError) {
-  console.error("Pantry history insert error:", historyError.message);
-}
+  if (historyError) {
+    console.error("Pantry history insert error:", historyError.message);
+  }
 
   res.status(201).json(data);
 };
@@ -84,25 +112,31 @@ export const matchRecipes = async (req: AuthRequest, res: Response) => {
   const pantryNames = pantryItems.map(i => i.name.toLowerCase());
 
   const { data: recipes, error: recipesError } = await supabase
-  .from('recipes')
-  .select(`
-    *,
-    ingredients(name),
-    profiles(username, first_name, last_name, full_name, avatar_url),
-    reviews(rating)
-  `)
-  .eq('is_public', true);
+    .from('recipes')
+    .select(`
+      *,
+      ingredients(name),
+      profiles(username, first_name, last_name, full_name, avatar_url),
+      reviews(rating)
+    `)
+    .eq('is_public', true);
 
   if (recipesError) return res.status(500).json({ error: recipesError.message });
 
   const matched = recipes
     .map(recipe => {
-      const recipeIngredients = recipe.ingredients.map((i: any) => i.name.toLowerCase());
+      const recipeIngredients = recipe.ingredients.map((i: any) =>
+        i.name.toLowerCase()
+      );
+
       const matchedCount = recipeIngredients.filter((ing: string) =>
         pantryNames.some(p => ing.includes(p) || p.includes(ing))
       ).length;
+
       const totalCount = recipeIngredients.length;
-      const matchPercent = totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0;
+      const matchPercent =
+        totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0;
+
       return { ...recipe, matchedCount, totalCount, matchPercent };
     })
     .filter(r => r.matchedCount > 0)
