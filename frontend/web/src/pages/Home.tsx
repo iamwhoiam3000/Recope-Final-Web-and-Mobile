@@ -67,7 +67,7 @@ export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const LIMIT = 10;
+  const LIMIT = 1000;
   const [matched, setMatched] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -710,32 +710,7 @@ useEffect(() => {
   </section>
 )}
 
-          {/* Recent Recipes */}
-          <div style={{ marginBottom: 40 }}>
-            <SectionHeader
-              title="🕐 Recently Added"
-              subtitle="The latest recipes from the community"
-              showAll={showAllRecent}
-              onToggle={() => setShowAllRecent(!showAllRecent)}
-              total={recentRecipes.length}
-            />
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: 20,
-              }}
-            >
-              {(showAllRecent
-                ? recentRecipes
-                : recentRecipes.slice(0, PREVIEW_COUNT)
-              ).map((recipe) => (
-                <RecipeCard key={recipe.id} recipe={recipe} />
-              ))}
-            </div>
-          </div>
-
-          {/* Popular Recipes */}
+{/* Popular Recipes */}
           <div style={{ marginBottom: 40 }}>
             <SectionHeader
               title="🔥 Most Popular"
@@ -761,6 +736,31 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+          {/* Recent Recipes */}
+          <div style={{ marginBottom: 40 }}>
+            <SectionHeader
+              title="🕐 Recently Added"
+              subtitle="The latest recipes from the community"
+              showAll={showAllRecent}
+              onToggle={() => setShowAllRecent(!showAllRecent)}
+              total={recentRecipes.length}
+            />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: 20,
+              }}
+            >
+              {(showAllRecent
+                ? recentRecipes
+                : recentRecipes.slice(0, PREVIEW_COUNT)
+              ).map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          </div>
 
       {loadingMore && (
         <p style={{ textAlign: "center", color: "#999", marginTop: 20 }}>
