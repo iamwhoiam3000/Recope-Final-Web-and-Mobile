@@ -330,7 +330,7 @@ useEffect(() => {
       </h3>
 
       <div style={{ color: "#f59e0b", fontSize: 14, marginBottom: 8 }}>
-        ★★★★★ 5.0 (test)
+        ★ {Number(recipe.avg_rating || 0).toFixed(1)} ({recipe.review_count || 0})
         </div>
 
       {/* Rating */}
