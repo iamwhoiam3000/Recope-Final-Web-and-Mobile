@@ -154,11 +154,14 @@ const handleGenerateNutrition = async () => {
       ingredients,
     });
 
-    if (!nutritionData.error) {
-      setNutrition(nutritionData);
-    } else {
+    console.log("Nutrition response:", nutritionData);
+
+    if (nutritionData?.error) {
       alert(nutritionData.error || "Failed to generate nutrition.");
+      return;
     }
+
+    setNutrition(nutritionData);
   } catch (error) {
     console.error("Nutrition error:", error);
     alert("Failed to generate nutrition. Please try again.");
