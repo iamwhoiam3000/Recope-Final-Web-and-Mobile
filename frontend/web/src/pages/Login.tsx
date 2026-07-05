@@ -136,7 +136,7 @@ if (error) {
               marginBottom: 5,
             }}
           >
-            RéCope
+            ReCopé
           </h1>
 
           <p
