@@ -167,10 +167,34 @@ const handleCookRecipe = async () => {
 };
 
 const formatAmount = (value: number): string => {
-  if (Number.isInteger(value)) return String(value);
+  const rounded = Math.round(value * 1000) / 1000;
 
-  const rounded = Math.round(value * 100) / 100;
-  return String(rounded);
+  const whole = Math.floor(rounded);
+  const decimal = Math.round((rounded - whole) * 1000) / 1000;
+
+  const fractions: Record<string, string> = {
+    "0.125": "1/8",
+    "0.25": "1/4",
+    "0.333": "1/3",
+    "0.375": "3/8",
+    "0.5": "1/2",
+    "0.625": "5/8",
+    "0.667": "2/3",
+    "0.75": "3/4",
+    "0.875": "7/8",
+  };
+
+  const key = decimal.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+
+  if (fractions[key]) {
+    return whole > 0 ? `${whole} ${fractions[key]}` : fractions[key];
+  }
+
+  if (Number.isInteger(rounded)) {
+    return String(rounded);
+  }
+
+  return rounded.toFixed(2).replace(/\.00$/, "").replace(/0$/, "");
 };
 
 const getAdjustedAmount = (amount: string) => {
