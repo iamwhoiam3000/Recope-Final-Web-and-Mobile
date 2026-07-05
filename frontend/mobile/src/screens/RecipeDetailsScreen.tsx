@@ -45,33 +45,10 @@ export default function RecipeDetailScreen() {
     if (data.id) {
   setRecipe(data);
   setAdjustedServings(data.servings || 1);
-
-  setNutritionLoading(true);
-
-  const nutritionData = await api.post("/api/ai/nutrition", {
-    title: data.title,
-    servings: data.servings,
-    ingredients: data.ingredients || [],
-  });
-
-  if (!nutritionData.error) {
-    setNutrition(nutritionData);
-  }
-
+  setNutrition(null);
+  setSubstitutions([]);
   setNutritionLoading(false);
-
-  setSubstitutionsLoading(true);
-
-const substitutionsData = await api.post("/api/ai/substitutions", {
-  title: data.title,
-  ingredients: data.ingredients || [],
-});
-
-if (!substitutionsData.error) {
-  setSubstitutions(substitutionsData.substitutions || []);
-}
-
-setSubstitutionsLoading(false);
+  setSubstitutionsLoading(false);
 }
 
     const favs = await api.get("/api/favorites");
@@ -195,6 +172,49 @@ setSubstitutionsLoading(false);
       ],
     );
   };
+
+  const handleGenerateNutrition = async () => {
+  if (!recipe) return;
+
+  setNutritionLoading(true);
+
+  try {
+    const nutritionData = await api.post("/api/ai/nutrition", {
+      title: recipe.title,
+      servings: recipe.servings,
+      ingredients: recipe.ingredients || [],
+    });
+
+    if (!nutritionData.error) {
+      setNutrition(nutritionData);
+    } else {
+      Alert.alert("Error", nutritionData.error || "Failed to generate nutrition.");
+    }
+  } finally {
+    setNutritionLoading(false);
+  }
+};
+
+const handleGenerateSubstitutions = async () => {
+  if (!recipe) return;
+
+  setSubstitutionsLoading(true);
+
+  try {
+    const substitutionsData = await api.post("/api/ai/substitutions", {
+      title: recipe.title,
+      ingredients: recipe.ingredients || [],
+    });
+
+    if (!substitutionsData.error) {
+      setSubstitutions(substitutionsData.substitutions || []);
+    } else {
+      Alert.alert("Error", substitutionsData.error || "Failed to generate suggestions.");
+    }
+  } finally {
+    setSubstitutionsLoading(false);
+  }
+};
 
   const parseAmount = (value: string): number | null => {
   if (!value) return null;
@@ -375,10 +395,46 @@ const getAdjustedAmount = (amount: string) => {
 
           <Text style={styles.description}>{recipe.description}</Text>
 
+          <View style={styles.metaRow}>
+
+            {[
+
+              { label: "Prep", value: `${recipe.prep_time}min` },
+
+              { label: "Cook", value: `${recipe.cook_time}min` },
+
+              { label: "Serves", value: recipe.servings },
+
+              { label: "Views", value: recipe.view_count || 0 },
+
+            ].map((item) => (
+
+              <View key={item.label} style={styles.metaCard}>
+
+                <Text style={styles.metaValue}>{item.value}</Text>
+
+                <Text style={styles.metaLabel}>{item.label}</Text>
+
+              </View>
+
+            ))}
+
+          </View>
+
           <View style={styles.section}>
   <Text style={styles.sectionTitle}>
     🍎 Estimated Nutrition (Per Serving)
   </Text>
+
+  <TouchableOpacity
+  onPress={handleGenerateNutrition}
+  disabled={nutritionLoading}
+  style={styles.aiButton}
+>
+  <Text style={styles.aiButtonText}>
+    {nutritionLoading ? "Generating..." : "Generate Nutrition"}
+  </Text>
+</TouchableOpacity>
 
   {nutritionLoading ? (
     <Text>Calculating nutrition...</Text>
@@ -405,24 +461,20 @@ const getAdjustedAmount = (amount: string) => {
   </Text>
 </View>
 
-          <View style={styles.metaRow}>
-            {[
-              { label: "Prep", value: `${recipe.prep_time}min` },
-              { label: "Cook", value: `${recipe.cook_time}min` },
-              { label: "Serves", value: recipe.servings },
-              { label: "Views", value: recipe.view_count || 0 },
-            ].map((item) => (
-              <View key={item.label} style={styles.metaCard}>
-                <Text style={styles.metaValue}>{item.value}</Text>
-                <Text style={styles.metaLabel}>{item.label}</Text>
-              </View>
-            ))}
-          </View>
-
           <View style={styles.section}>
   <Text style={styles.sectionTitle}>
     💡 Alternative Ingredient Suggestions
   </Text>
+
+  <TouchableOpacity
+  onPress={handleGenerateSubstitutions}
+  disabled={substitutionsLoading}
+  style={styles.aiButton}
+>
+  <Text style={styles.aiButtonText}>
+    {substitutionsLoading ? "Generating..." : "Generate Suggestions"}
+  </Text>
+</TouchableOpacity>
 
   {substitutionsLoading ? (
     <Text>Finding alternatives...</Text>
@@ -557,6 +609,19 @@ const getAdjustedAmount = (amount: string) => {
 }
 
 const styles = StyleSheet.create({
+  aiButton: {
+  backgroundColor: colors.primary,
+  borderRadius: 8,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  alignItems: "center",
+  marginBottom: 12,
+},
+aiButtonText: {
+  color: colors.white,
+  fontWeight: "600",
+  fontSize: 14,
+},
   favoriteButton: {
     alignSelf: "flex-start",
     backgroundColor: colors.primaryLight,
