@@ -340,11 +340,13 @@ export default function Pantry() {
               style={inputStyle}
             />
             <input
-              placeholder="Qty"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              style={inputStyle}
-            />
+  type="text"
+  inputMode="decimal"
+  placeholder="Qty"
+  value={quantity}
+  onChange={(e) => setQuantity(e.target.value)}
+  style={inputStyle}
+/>
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
@@ -470,13 +472,15 @@ export default function Pantry() {
                         placeholder="Ingredient name"
                       />
                       <input
-                        value={editForm.quantity}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, quantity: e.target.value })
-                        }
-                        style={inputStyle}
-                        placeholder="Qty"
-                      />
+  type="text"
+  inputMode="decimal"
+  value={editForm.quantity}
+  onChange={(e) =>
+    setEditForm({ ...editForm, quantity: e.target.value })
+  }
+  style={inputStyle}
+  placeholder="Qty"
+/>
                       <select
                         value={editForm.unit}
                         onChange={(e) =>
