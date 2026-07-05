@@ -417,7 +417,6 @@ const getAdjustedAmount = (amount: string) => {
 
   <button
   onClick={handleGenerateNutrition}
-  disabled={nutritionLoading}
   style={{
     marginBottom: 12,
     padding: "8px 14px",
@@ -428,7 +427,7 @@ const getAdjustedAmount = (amount: string) => {
     cursor: "pointer",
   }}
 >
-  {nutritionLoading ? "Generating..." : "Generate Nutrition"}
+  Generate Nutrition
 </button>
 
   {nutritionLoading ? (
