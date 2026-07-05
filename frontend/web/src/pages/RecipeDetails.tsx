@@ -52,6 +52,8 @@ export default function RecipeDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [adjustedServings, setAdjustedServings] = useState<number>(1);
+  const [nutrition, setNutrition] = useState<any>(null);
+  const [nutritionLoading, setNutritionLoading] = useState(false);
 
   const hasTrackedView = useRef(false);
 
@@ -71,6 +73,19 @@ export default function RecipeDetail() {
         setRecipe(data);
         setIngredients(data.ingredients || []);
         setSteps(data.steps || []);
+        setNutritionLoading(true);
+
+const nutritionData = await api.post("/api/ai/nutrition", {
+  title: data.title,
+  servings: data.servings,
+  ingredients: data.ingredients || [],
+});
+
+if (!nutritionData.error) {
+  setNutrition(nutritionData);
+}
+
+setNutritionLoading(false);
         setAdjustedServings(data.servings || 1);
       }
 
@@ -340,6 +355,33 @@ const getAdjustedAmount = (amount: string) => {
       serving(s)
     </label>
   </div>
+</div>
+
+{/* NUTRITION */}
+<div
+  style={{
+    marginTop: 24,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: "#fff7ed",
+    borderRadius: 12,
+    border: "1px solid #fed7aa",
+  }}
+>
+  <h3 style={{ marginTop: 0 }}>Estimated Nutrition Per Serving</h3>
+
+  {nutritionLoading ? (
+    <p>Calculating nutrition...</p>
+  ) : nutrition ? (
+    <div>
+      <p>🔥 Calories: {nutrition.calories} kcal</p>
+      <p>🥩 Protein: {nutrition.protein} g</p>
+      <p>🥑 Fat: {nutrition.fat} g</p>
+      <p>🍚 Carbohydrates: {nutrition.carbohydrates} g</p>
+    </div>
+  ) : (
+    <p>No nutrition data available.</p>
+  )}
 </div>
 
       {/* INGREDIENTS */}
