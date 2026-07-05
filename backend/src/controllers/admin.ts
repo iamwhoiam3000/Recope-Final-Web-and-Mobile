@@ -18,7 +18,7 @@ const [
     supabase.from("recipes").select("*", { count: "exact", head: true }),
     supabase.from("reviews").select("*", { count: "exact", head: true }),
     supabase.from("pantry_items").select("*", { count: "exact", head: true }),
-    supabase.from("pantry_history").select("quantity_added, quantity_used, quantity_expired, activity, created_at"),
+    supabase.from("pantry_history").select("ingredient_name, quantity_added, quantity_used, quantity_expired, activity, created_at"),
 
     supabase
       .from("recipes")
@@ -99,9 +99,15 @@ const [
 
     totalViews += Number(r.view_count || 0);
 
-    if (r.meal_type) {
-      mealTypeCount[r.meal_type] = (mealTypeCount[r.meal_type] || 0) + 1;
+    if (Array.isArray(r.meal_type)) {
+  r.meal_type.forEach((type: string) => {
+    if (type) {
+      mealTypeCount[type] = (mealTypeCount[type] || 0) + 1;
     }
+  });
+} else if (r.meal_type) {
+  mealTypeCount[r.meal_type] = (mealTypeCount[r.meal_type] || 0) + 1;
+}
 
     if (r.cuisine_type) {
       cuisineTypeCount[r.cuisine_type] =
