@@ -10,24 +10,39 @@ const groq = new Groq({
 export const generateRecipe = async (req: AuthRequest, res: Response) => {
   const { message } = req.body;
 
-  const { data: pantryItems } = await supabase
-    .from('pantry_items')
-    .select('name, quantity, unit')
-    .eq('user_id', req.user!.id);
+  const { data: pantryItems, error: pantryError } = await supabase
+    .from("pantry_items")
+    .select("name, quantity, unit")
+    .eq("user_id", req.user!.id);
 
-  const pantryList = pantryItems?.map(i =>
-    `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ''}`
-  ).join(', ') || 'empty';
+  if (pantryError) {
+    return res.status(500).json({
+      type: "message",
+      message: "Sorry, I had trouble checking your pantry. Please try again.",
+    });
+  }
 
-  const systemPrompt = `You are ReCopé's AI recipe assistant. You help users generate delicious recipes.
+  if (!pantryItems || pantryItems.length === 0) {
+    return res.json({
+      type: "message",
+      message:
+        "Sorry I won't be able to generate a recipe right now. Please enter an ingredient in the pantry.",
+    });
+  }
+
+  const pantryList = pantryItems
+    .map((i) => `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`)
+    .join(", ");
+
+  const systemPrompt = `You are ReCopé's AI recipe assistant. You generate recipes ONLY from the user's pantry ingredients.
 
 The user's pantry currently contains: ${pantryList}
 
-You can generate ANY recipe the user asks for, whether or not they have the ingredients. 
-- If they ask for a recipe using their pantry ingredients, prioritize those.
-- If they ask for any other recipe, generate it freely.
-- If they ask "what can I make with my pantry?", suggest recipes using their pantry items.
-- Always be helpful, creative and encouraging.
+Rules:
+- You must only generate recipes using the user's pantry ingredients.
+- Do not generate recipes that require ingredients not listed in the pantry.
+- If the user asks for a recipe that cannot be made with the pantry ingredients, suggest a recipe that can be made from the pantry instead.
+- If the user is just chatting or asking a general question, respond normally as a helpful assistant.
 
 When generating a recipe, ALWAYS respond with a JSON object in this exact format with no markdown or code blocks, just raw JSON:
 {
@@ -49,7 +64,7 @@ When generating a recipe, ALWAYS respond with a JSON object in this exact format
   "message": "A friendly message about the recipe"
 }
 
-If the user is just chatting or asking a question (not requesting a recipe), respond with:
+If the user is just chatting or asking a question, respond with:
 {
   "type": "message",
   "message": "Your response here"
@@ -63,45 +78,47 @@ Always return raw JSON only, no markdown, no code blocks.`;
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: "llama-3.3-70b-versatile",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message },
       ],
       temperature: 0.7,
       max_tokens: 1500,
     });
 
-    const text = completion.choices[0]?.message?.content || '';
-    console.log('Groq response:', text);
+    const text = completion.choices[0]?.message?.content || "";
+    console.log("Groq response:", text);
 
-    const clean = text.replace(/```json|```/g, '').trim();
+    const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
-    
+
     if (parsed.type === "recipe") {
       parsed.meal_type = Array.isArray(parsed.meal_type)
-  ? parsed.meal_type
-  : parsed.meal_type
-    ? [parsed.meal_type]
-    : [];
-  const totalTime = Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
+        ? parsed.meal_type
+        : parsed.meal_type
+          ? [parsed.meal_type]
+          : [];
 
-  parsed.cook_duration =
-    totalTime < 30
-      ? "Quick (under 30min)"
-      : totalTime <= 60
-        ? "Medium (30-60min)"
-        : "Long (over 60min)";
-}
+      const totalTime = Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
+
+      parsed.cook_duration =
+        totalTime < 30
+          ? "Quick (under 30min)"
+          : totalTime <= 60
+            ? "Medium (30-60min)"
+            : "Long (over 60min)";
+    }
+
     res.json(parsed);
   } catch (error: any) {
-  console.error("Groq full error:", error);
-  res.status(500).json({
-    type: "message",
-    message: "Sorry, I had trouble generating a recipe. Please try again!",
-    error: error.message,
-  });
-}
+    console.error("Groq full error:", error);
+    res.status(500).json({
+      type: "message",
+      message: "Sorry, I had trouble generating a recipe. Please try again!",
+      error: error.message,
+    });
+  }
 };
 
 export const generateNutrition = async (req: AuthRequest, res: Response) => {
