@@ -40,9 +40,9 @@ The user's pantry currently contains: ${pantryList}
 
 Rules:
 - You must only generate recipes using the user's pantry ingredients.
-- Do not generate recipes that require ingredients not listed in the pantry.
-- If the user asks for a recipe that cannot be made with the pantry ingredients, suggest a recipe that can be made from the pantry instead.
-- If the user is just chatting or asking a general question, respond normally as a helpful assistant.
+- Do not add ingredients that are not listed in the pantry.
+- If the pantry is empty, do not generate a recipe.
+- If the user asks for a recipe that needs ingredients outside the pantry, suggest only what can be made from the pantry.
 
 When generating a recipe, ALWAYS respond with a JSON object in this exact format with no markdown or code blocks, just raw JSON:
 {
@@ -94,23 +94,23 @@ Always return raw JSON only, no markdown, no code blocks.`;
     const parsed = JSON.parse(clean);
 
     if (parsed.type === "recipe") {
-      parsed.meal_type = Array.isArray(parsed.meal_type)
-        ? parsed.meal_type
-        : parsed.meal_type
-          ? [parsed.meal_type]
-          : [];
+  parsed.meal_type = Array.isArray(parsed.meal_type)
+    ? parsed.meal_type
+    : parsed.meal_type
+      ? [parsed.meal_type]
+      : [];
 
-      const totalTime = Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
+  const totalTime = Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
 
-      parsed.cook_duration =
-        totalTime < 30
-          ? "Quick (under 30min)"
-          : totalTime <= 60
-            ? "Medium (30-60min)"
-            : "Long (over 60min)";
-    }
+  parsed.cook_duration =
+    totalTime < 30
+      ? "Quick (under 30min)"
+      : totalTime <= 60
+        ? "Medium (30-60min)"
+        : "Long (over 60min)";
+}
 
-    res.json(parsed);
+res.json(parsed);
   } catch (error: any) {
     console.error("Groq full error:", error);
     res.status(500).json({
