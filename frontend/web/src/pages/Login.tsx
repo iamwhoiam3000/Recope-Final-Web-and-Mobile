@@ -2,8 +2,6 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-const WEB_URL = "https://recope-final-web-and-mobile.vercel.app";
-
 const GREEN = {
   primary: "#2d6a4f",
   light: "#f0f7f4",
@@ -27,84 +25,130 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
 
+  const clearMessages = () => {
+    setError("");
+    setSuccess("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
+    e.preventDefault();
 
-  if (isSignUp) {
-    const { error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: `${window.location.origin}/email-verified`,
-  },
-});
+    clearMessages();
+    setLoading(true);
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setError("Email Verification Sent! Please check your inbox.");
+    try {
+      if (isSignUp) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/email-verified`,
+          },
+        });
+
+        if (signUpError) {
+          setError(signUpError.message);
+          return;
+        }
+
+        setSuccess(
+          "Email verification sent successfully. Please check your inbox."
+        );
+        return;
+      }
+
+      const { error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+
+      clearMessages();
+    } catch (err) {
+      console.error("Authentication error:", err);
+
+      setError(
+        "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-  } else {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-  setError(error.message);
-} else if (isSignUp) {
-  setError("Email Verification Sent! Please check your inbox.");
-} else {
-  setError("");
-}
-  }
-
-  setLoading(false);
-};
+  };
 
   const handleForgotPassword = async () => {
-  if (!email) {
-    setError("Please enter your email address first.");
-    return;
-  }
+    clearMessages();
 
-  setLoading(true);
-  setError("");
+    if (!email.trim()) {
+      setError("Please enter your email address first.");
+      return;
+    }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/reset-password`,
-});
+    setLoading(true);
 
-if (error) {
-  if (error.message.toLowerCase().includes("email rate limit")) {
-    setError(
-      "Too many password reset requests. Please wait a few minutes before trying again."
-    );
-  } else {
-    setError(error.message);
-  }
-} else {
-  setError("Password reset email sent. Please check your inbox.");
-}
+    try {
+      const { error: resetError } =
+        await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
 
-  setLoading(false);
-};
+      if (resetError) {
+        if (
+          resetError.message
+            .toLowerCase()
+            .includes("email rate limit")
+        ) {
+          setError(
+            "Too many password reset requests. Please wait a few minutes before trying again."
+          );
+        } else {
+          setError(resetError.message);
+        }
+
+        return;
+      }
+
+      setSuccess(
+        "Password reset email sent successfully. Please check your inbox."
+      );
+    } catch (err) {
+      console.error("Password reset error:", err);
+
+      setError(
+        "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp((current) => !current);
+    setPassword("");
+    setShowPassword(false);
+    clearMessages();
+  };
 
   return (
     <div
-  style={{
-  display: "flex",
-  height: "100vh",
-  width: "100%",
-  overflow: "hidden",
-  fontFamily: "sans-serif",
-}}
->
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        fontFamily: "sans-serif",
+      }}
+    >
       {/* LEFT SIDE */}
       <div
         style={{
@@ -119,20 +163,22 @@ if (error) {
       >
         <div
           style={{
-            width: 380,
+            width: "100%",
+            maxWidth: 380,
             backgroundColor: "#fff",
             padding: 40,
             borderRadius: 16,
             border: `1px solid ${GREEN.mid}`,
+            boxSizing: "border-box",
           }}
         >
-          {/* Logo */}
           <h1
             style={{
               fontSize: 32,
               fontWeight: 800,
               color: GREEN.primary,
               textAlign: "center",
+              marginTop: 0,
               marginBottom: 5,
             }}
           >
@@ -142,107 +188,198 @@ if (error) {
           <p
             style={{
               textAlign: "center",
-              color: "#999",
+              color: "#777",
               marginBottom: 25,
               fontSize: 14,
             }}
           >
-            Reduce food waste, one recipe at a time
+            Recipe and Pantry Management System
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 5 }}>
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              marginBottom: 5,
+            }}
+          >
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h2>
 
-          <p style={{ color: "#777", marginBottom: 20, fontSize: 14 }}>
+          <p
+            style={{
+              color: "#777",
+              marginBottom: 20,
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
             {isSignUp
-              ? "Sign up to start generating recipes"
-              : "Sign in to continue"}
+              ? "Create a ReCopé account to manage your pantry and discover recipes."
+              : "Sign in to access your ReCopé account."}
           </p>
 
+          {/* Actual errors only */}
           {error && (
             <div
+              role="alert"
               style={{
-                background: "#ffe5e5",
-                color: "#d32f2f",
+                backgroundColor: "#ffe5e5",
+                color: "#b42318",
+                border: "1px solid #f5b7b1",
                 padding: 10,
                 borderRadius: 8,
                 marginBottom: 16,
                 fontSize: 13,
+                lineHeight: 1.5,
               }}
             >
               {error}
             </div>
           )}
 
+          {/* Successful actions */}
+          {success && (
+            <div
+              role="status"
+              style={{
+                backgroundColor: "#e7f6ec",
+                color: "#25633f",
+                border: "1px solid #b7dfc8",
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 16,
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {success}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
+            <label
+              htmlFor="email"
+              style={{
+                display: "block",
+                marginBottom: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#444",
+              }}
+            >
+              Email address
+            </label>
+
             <input
+              id="email"
+              name="email"
               type="email"
-              placeholder="Email address"
+              placeholder="Enter your email address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearMessages();
+              }}
+              autoComplete="email"
               required
+              disabled={loading}
               style={inputStyle}
             />
 
+            <label
+              htmlFor="password"
+              style={{
+                display: "block",
+                marginBottom: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#444",
+              }}
+            >
+              Password
+            </label>
+
             <div
-  style={{
-    position: "relative",
-    width: "100%",
-    marginBottom: 12,
-  }}
->
-  <input
-    type={showPassword ? "text" : "password"}
-    placeholder="Password"
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-    required
-    style={{
-      ...inputStyle,
-      marginBottom: 0,
-      paddingRight: 45,
-    }}
-  />
+              style={{
+                position: "relative",
+                width: "100%",
+                marginBottom: 12,
+              }}
+            >
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearMessages();
+                }}
+                autoComplete={
+                  isSignUp ? "new-password" : "current-password"
+                }
+                required
+                disabled={loading}
+                style={{
+                  ...inputStyle,
+                  marginBottom: 0,
+                  paddingRight: 45,
+                }}
+              />
 
-  <button
-    type="button"
-    onClick={() => setShowPassword(!showPassword)}
-    style={{
-      position: "absolute",
-      right: 12,
-      top: "50%",
-      transform: "translateY(-50%)",
-      border: "none",
-      background: "transparent",
-      cursor: "pointer",
-      color: "#666",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 0,
-    }}
-  >
-    {showPassword ? FaEyeSlash({ size: 18 }) : FaEye({ size: 18 })}
-  </button>
-</div>
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword((current) => !current)
+                }
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  color: "#666",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
+              >
+                {showPassword ? (
+                  <FaEyeSlash size={18} />
+                ) : (
+                  <FaEye size={18} />
+                )}
+              </button>
+            </div>
 
-<button
-  type="button"
-  onClick={handleForgotPassword}
-  style={{
-    background: "none",
-    border: "none",
-    color: GREEN.primary,
-    fontSize: 13,
-    cursor: "pointer",
-    marginBottom: 10,
-    padding: 0,
-    textAlign: "left",
-  }}
->
-  Forgot password?
-</button>
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: GREEN.primary,
+                  fontSize: 13,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  marginBottom: 10,
+                  padding: 0,
+                  textAlign: "left",
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button
               type="submit"
@@ -256,12 +393,16 @@ if (error) {
                 borderRadius: 10,
                 fontWeight: 600,
                 marginTop: 10,
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 15,
+                opacity: loading ? 0.7 : 1,
               }}
             >
-              
-              {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
+              {loading
+                ? "Please wait..."
+                : isSignUp
+                  ? "Create ReCopé Account"
+                  : "Sign In to ReCopé"}
             </button>
           </form>
 
@@ -270,25 +411,43 @@ if (error) {
               textAlign: "center",
               marginTop: 20,
               fontSize: 14,
-              color: "#999",
+              color: "#777",
             }}
           >
+            {isSignUp
+              ? "Already have an account?"
+              : "Don't have an account?"}
 
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              type="button"
+              onClick={toggleMode}
+              disabled={loading}
               style={{
                 marginLeft: 6,
                 background: "none",
                 border: "none",
                 color: GREEN.primary,
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 14,
               }}
             >
               {isSignUp ? "Sign in" : "Sign up"}
             </button>
+          </p>
+
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: 20,
+              marginBottom: 0,
+              color: "#999",
+              fontSize: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            ReCopé only uses your account information to provide
+            access to its recipe and pantry management features.
           </p>
         </div>
       </div>
@@ -297,23 +456,51 @@ if (error) {
       <div
         style={{
           flex: 1,
-          height: "100%",
+          minHeight: "100vh",
           backgroundColor: GREEN.primary,
-          color: "white",
+          color: "#fff",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           padding: 60,
+          boxSizing: "border-box",
         }}
       >
-        <h1 style={{ fontSize: 32, marginBottom: 30 }}>
+        <h1
+          style={{
+            fontSize: 32,
+            marginTop: 0,
+            marginBottom: 15,
+          }}
+        >
           Smart Recipe Recommendations
         </h1>
-        <ul style={{ lineHeight: "2", fontSize: 16 }}>
-          <li>✔ Match recipes with available ingredients</li>
-          <li>✔ Reduce food waste</li>
-          <li>✔ Discover new dishes</li>
-          <li>✔ Plan meals efficiently</li>
+
+        <p
+          style={{
+            maxWidth: 500,
+            marginTop: 0,
+            marginBottom: 24,
+            lineHeight: 1.6,
+            opacity: 0.9,
+          }}
+        >
+          ReCopé helps users manage pantry ingredients, discover
+          appropriate recipes, and reduce avoidable food waste.
+        </p>
+
+        <ul
+          style={{
+            lineHeight: 2,
+            fontSize: 16,
+            paddingLeft: 20,
+          }}
+        >
+          <li>Match recipes with available ingredients</li>
+          <li>Manage pantry contents</li>
+          <li>Reduce food waste</li>
+          <li>Discover and create recipes</li>
+          <li>Plan meals efficiently</li>
         </ul>
       </div>
     </div>
