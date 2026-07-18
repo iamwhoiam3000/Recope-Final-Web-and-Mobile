@@ -352,11 +352,9 @@ export default function Login() {
                   padding: 0,
                 }}
               >
-                {showPassword ? (
-                  <FaEyeSlash size={18} />
-                ) : (
-                  <FaEye size={18} />
-                )}
+                {showPassword
+  ? FaEyeSlash({ size: 18 })
+  : FaEye({ size: 18 })}
               </button>
             </div>
 
