@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import ResetPassword from "./pages/ResetPassword";
 import EmailVerified from "./pages/EmailVerified";
 import EmailUpdated from "./pages/EmailUpdated";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 function Navbar() {
   const { user, signOut, isAdmin } = useAuth();
@@ -282,6 +283,7 @@ function AppContent() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email-verified" element={<EmailVerified />} />
         <Route path="/email-updated" element={<EmailUpdated />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
 
         {!user ? (
           <>
