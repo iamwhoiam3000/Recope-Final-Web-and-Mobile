@@ -18,7 +18,6 @@ import {
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme";
-import ReviewSection from "../components/ReviewSection";
 
 export default function RecipeDetailScreen() {
   const route = useRoute<any>();
@@ -565,8 +564,7 @@ onBlur={() => {
               </View>
             ))}
           </View>
-
-          <ReviewSection recipeId={id} />
+          
         </View>
       </ScrollView>
 

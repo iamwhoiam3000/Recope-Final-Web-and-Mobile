@@ -10,6 +10,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Switch,
+  Linking,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { colors } from "../theme";
@@ -20,6 +22,9 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [aiConsentAccepted, setAiConsentAccepted] = useState(false);
 
   const handleSubmit = async () => {
   if (!email || !password) {
@@ -29,13 +34,32 @@ export default function LoginScreen() {
   setLoading(true);
 
   if (isSignUp) {
-    const { error } = await supabase.auth.signUp({
+  if (!termsAccepted || !privacyAccepted || !aiConsentAccepted) {
+    Alert.alert(
+      "Consent required",
+      "Please accept the Terms and Conditions, Privacy Policy, and AI Data Processing Notice before creating an account."
+    );
+
+    setLoading(false);
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo:
-          "https://recope-final-web-and-mobile.vercel.app/email-verified",
-      },
+  emailRedirectTo:
+    "https://recope-final-web-and-mobile.vercel.app/email-verified",
+  data: {
+    terms_accepted: termsAccepted,
+    privacy_accepted: privacyAccepted,
+    ai_consent_accepted: aiConsentAccepted,
+    terms_version: "2026-07",
+    privacy_version: "2026-07",
+    ai_notice_version: "2026-07",
+    consent_date: new Date().toISOString(),
+  },
+},
     });
 
     if (error) {
@@ -45,6 +69,9 @@ export default function LoginScreen() {
         "Email Verification Sent!",
         "Please check your email and verify your account before signing in."
       );
+      setTermsAccepted(false);
+      setPrivacyAccepted(false);
+      setAiConsentAccepted(false);
       setIsSignUp(false);
     }
   } else {
@@ -134,19 +161,103 @@ if (error) {
   </TouchableOpacity>
 </View>
 
-<TouchableOpacity
-  onPress={handleForgotPassword}
-  disabled={loading}
-  style={styles.forgotPasswordContainer}
->
-  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-</TouchableOpacity>
+{isSignUp ? (
+  <View style={styles.consentContainer}>
+    {/* Terms */}
+    <View style={styles.consentRow}>
+      <Switch
+        value={termsAccepted}
+        onValueChange={setTermsAccepted}
+      />
+
+      <TouchableOpacity
+        onPress={() =>
+          Linking.openURL(
+            "https://recope-final-web-and-mobile.vercel.app/terms-and-conditions"
+          )
+        }
+      >
+        <Text style={styles.consentText}>
+          I agree to the{" "}
+          <Text style={styles.link}>
+            Terms & Conditions
+          </Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Privacy */}
+    <View style={styles.consentRow}>
+      <Switch
+        value={privacyAccepted}
+        onValueChange={setPrivacyAccepted}
+      />
+
+      <TouchableOpacity
+        onPress={() =>
+          Linking.openURL(
+            "https://recope-final-web-and-mobile.vercel.app/privacy-policy"
+          )
+        }
+      >
+        <Text style={styles.consentText}>
+          I agree to the{" "}
+          <Text style={styles.link}>
+            Privacy Policy
+          </Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* AI */}
+    <View style={styles.consentRow}>
+      <Switch
+        value={aiConsentAccepted}
+        onValueChange={setAiConsentAccepted}
+      />
+
+      <TouchableOpacity
+        onPress={() =>
+          Linking.openURL(
+            "https://recope-final-web-and-mobile.vercel.app/ai-data-processing"
+          )
+        }
+      >
+        <Text style={styles.consentText}>
+          I agree to the{" "}
+          <Text style={styles.link}>
+            AI Data Processing Notice
+          </Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+) : (
+  <TouchableOpacity
+    onPress={handleForgotPassword}
+    disabled={loading}
+    style={styles.forgotPasswordContainer}
+  >
+    <Text style={styles.forgotPasswordText}>
+      Forgot password?
+    </Text>
+  </TouchableOpacity>
+)}
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
+  style={[
+    styles.button,
+    isSignUp &&
+      (!termsAccepted || !privacyAccepted || !aiConsentAccepted) &&
+      styles.buttonDisabled,
+  ]}
+  onPress={handleSubmit}
+  disabled={
+    loading ||
+    (isSignUp &&
+      (!termsAccepted || !privacyAccepted || !aiConsentAccepted))
+  }
+>
           {loading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
@@ -156,7 +267,15 @@ if (error) {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
+        <TouchableOpacity
+        onPress={() => {
+          setIsSignUp(!isSignUp);
+          setTermsAccepted(false);
+          setPrivacyAccepted(false);
+          setAiConsentAccepted(false);
+          setPassword("");
+          }}
+          >
           <Text style={styles.switchText}>
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <Text style={styles.switchLink}>
@@ -248,7 +367,34 @@ forgotPasswordContainer: {
     alignItems: "center",
     marginBottom: 16,
   },
+
+  buttonDisabled: {
+  opacity: 0.5,
+},
+
   buttonText: { color: colors.white, fontSize: 16, fontWeight: "600" },
   switchText: { textAlign: "center", fontSize: 14, color: colors.textMuted },
   switchLink: { color: colors.primary, fontWeight: "600" },
+
+  consentContainer: {
+  marginBottom: 16,
+},
+
+consentRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 12,
+},
+
+consentText: {
+  flex: 1,
+  marginLeft: 10,
+  fontSize: 13,
+  color: colors.textPrimary,
+},
+
+link: {
+  color: colors.primary,
+  fontWeight: "600",
+},
 });
