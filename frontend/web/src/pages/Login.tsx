@@ -61,11 +61,16 @@ export default function Login() {
           options: {
   emailRedirectTo: `${window.location.origin}/email-verified`,
   data: {
-    terms_accepted: true,
-    privacy_accepted: true,
-    ai_consent_accepted: true,
-    consent_date: new Date().toISOString(),
-  },
+  terms_accepted: termsAccepted,
+  privacy_accepted: privacyAccepted,
+  ai_consent_accepted: aiConsentAccepted,
+
+  terms_version: "2026-07",
+  privacy_version: "2026-07",
+  ai_notice_version: "2026-07",
+
+  consent_date: new Date().toISOString(),
+},
 },
         });
 
