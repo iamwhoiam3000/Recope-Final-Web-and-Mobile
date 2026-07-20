@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
 import api from "./lib/api";
 import Login from "./pages/Login";
+import CookieBanner from "./components/CookieBanner";
 import Home from "./pages/Home";
 import RecipeDetail from "./pages/RecipeDetails";
 import CreateRecipe from "./pages/CreateRecipe";
@@ -279,6 +280,7 @@ function AppContent() {
 
   return (
     <BrowserRouter>
+    <CookieBanner />
       <Routes>
         {/* Public account pages */}
         <Route path="/reset-password" element={<ResetPassword />} />
