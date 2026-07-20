@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/login")}
           style={{
             border: "none",
             background: "transparent",
