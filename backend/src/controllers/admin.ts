@@ -193,7 +193,6 @@ const topWastedIngredient =
   res.json({
     totalUsers,
     totalRecipes,
-    totalReviews,
     totalPantryItems,
     totalViews,
     averageViews: totalRecipes > 0 ? Math.round(totalViews / totalRecipes) : 0,
