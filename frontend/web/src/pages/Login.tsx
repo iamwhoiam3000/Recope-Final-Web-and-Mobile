@@ -31,6 +31,10 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [aiConsentAccepted, setAiConsentAccepted] = useState(false);
+
   const clearMessages = () => {
     setError("");
     setSuccess("");
@@ -44,12 +48,25 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
+  if (!termsAccepted || !privacyAccepted || !aiConsentAccepted) {
+    setError(
+      "Please accept the Terms and Conditions, Privacy Policy, and AI data-processing consent before creating an account."
+    );
+    return;
+  }
+
+  const { error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/email-verified`,
-          },
+  emailRedirectTo: `${window.location.origin}/email-verified`,
+  data: {
+    terms_accepted: true,
+    privacy_accepted: true,
+    ai_consent_accepted: true,
+    consent_date: new Date().toISOString(),
+  },
+},
         });
 
         if (signUpError) {
@@ -136,6 +153,9 @@ export default function Login() {
     setIsSignUp((current) => !current);
     setPassword("");
     setShowPassword(false);
+    setTermsAccepted(false);
+    setPrivacyAccepted(false);
+    setAiConsentAccepted(false);
     clearMessages();
   };
 
@@ -358,6 +378,125 @@ export default function Login() {
               </button>
             </div>
 
+            {isSignUp && (
+  <div
+    style={{
+      marginTop: 16,
+      marginBottom: 12,
+      display: "flex",
+      flexDirection: "column",
+      gap: 12,
+    }}
+  >
+    <label
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        fontSize: 13,
+        color: "#555",
+        lineHeight: 1.5,
+        cursor: loading ? "not-allowed" : "pointer",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={termsAccepted}
+        onChange={(e) => {
+          setTermsAccepted(e.target.checked);
+          clearMessages();
+        }}
+        disabled={loading}
+        style={{ marginTop: 3 }}
+      />
+
+      <span>
+        I have read and agree to the{" "}
+        <a
+          href="/terms-and-conditions"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            color: GREEN.primary,
+            fontWeight: 600,
+          }}
+        >
+          Terms and Conditions
+        </a>
+        .
+      </span>
+    </label>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        fontSize: 13,
+        color: "#555",
+        lineHeight: 1.5,
+        cursor: loading ? "not-allowed" : "pointer",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={privacyAccepted}
+        onChange={(e) => {
+          setPrivacyAccepted(e.target.checked);
+          clearMessages();
+        }}
+        disabled={loading}
+        style={{ marginTop: 3 }}
+      />
+
+      <span>
+        I have read and understand the{" "}
+        <a
+          href="/privacy-policy"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            color: GREEN.primary,
+            fontWeight: 600,
+          }}
+        >
+          Privacy Policy
+        </a>
+        .
+      </span>
+    </label>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        fontSize: 13,
+        color: "#555",
+        lineHeight: 1.5,
+        cursor: loading ? "not-allowed" : "pointer",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={aiConsentAccepted}
+        onChange={(e) => {
+          setAiConsentAccepted(e.target.checked);
+          clearMessages();
+        }}
+        disabled={loading}
+        style={{ marginTop: 3 }}
+      />
+
+      <span>
+        I agree that my pantry ingredients, recipe requests, and AI messages may
+        be processed to provide recipe recommendations. I will not submit
+        sensitive personal information.
+      </span>
+    </label>
+  </div>
+)}
+
             {!isSignUp && (
               <button
                 type="button"
@@ -381,7 +520,11 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading ||
+                (isSignUp &&
+                  (!termsAccepted || !privacyAccepted || !aiConsentAccepted))
+                }
               style={{
                 width: "100%",
                 padding: 14,
@@ -391,9 +534,19 @@ export default function Login() {
                 borderRadius: 10,
                 fontWeight: 600,
                 marginTop: 10,
-                cursor: loading ? "not-allowed" : "pointer",
+                cursor:
+                loading ||
+                (isSignUp &&
+                  (!termsAccepted || !privacyAccepted || !aiConsentAccepted))
+                  ? "not-allowed"
+                  : "pointer",
                 fontSize: 15,
-                opacity: loading ? 0.7 : 1,
+                opacity:
+                loading ||
+                (isSignUp &&
+                  (!termsAccepted || !privacyAccepted || !aiConsentAccepted))
+                  ? 0.6
+                  : 1,
               }}
             >
               {loading
