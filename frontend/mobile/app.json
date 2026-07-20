@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.emcee123.mobile"
+      "package": "com.recopefinal.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,8 +34,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "d830de08-dcce-42d0-bf61-5ee3a5ed2c71"
+        "projectId": "bd60e12b-069f-45b1-8a5a-15b49bef86d0"
       }
-    }
+    },
+    "owner": "recope-final"
   }
 }
