@@ -6,7 +6,6 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
 const [
   usersResult,
   recipesCountResult,
-  reviewsResult,
   pantryResult,
   pantryHistoryResult,
   recipesResult,
@@ -16,7 +15,6 @@ const [
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("recipes").select("*", { count: "exact", head: true }),
-    supabase.from("reviews").select("*", { count: "exact", head: true }),
     supabase.from("pantry_items").select("*", { count: "exact", head: true }),
     supabase.from("pantry_history").select("ingredient_name, quantity_added, quantity_used, quantity_expired, activity, created_at"),
 
@@ -43,7 +41,7 @@ const [
 
   const totalUsers = usersResult.count || 0;
   const totalRecipes = recipesCountResult.count || 0;
-  const totalReviews = reviewsResult.count || 0;
+  const totalReviews = 0;
   const totalPantryItems = pantryResult.count || 0;
 
   const recipes = recipesResult.data || [];
