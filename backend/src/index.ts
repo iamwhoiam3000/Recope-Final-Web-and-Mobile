@@ -7,7 +7,6 @@ import pantryRoutes from './routes/pantry';
 import aiRoutes from './routes/ai';
 import chatRoutes from './routes/chat';
 import adminRoutes from './routes/admin';
-import reviewRoutes from './routes/reviews';
 import favoriteRoutes from "./routes/favorites";
 
 dotenv.config();
@@ -28,7 +27,6 @@ app.use('/api/pantry', pantryRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/reviews', reviewRoutes);
 app.use("/api/favorites", favoriteRoutes);
 
 
