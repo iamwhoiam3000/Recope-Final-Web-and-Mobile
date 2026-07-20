@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
-import ReviewSection from "../pages/ReviewSection";
 
 interface Recipe {
   id: string;
@@ -586,8 +585,6 @@ const getAdjustedAmount = (amount: string) => {
           <b>{i + 1}.</b> {step.instruction}
         </div>
       ))}
-
-      <ReviewSection recipeId={id!} />
     </div>
   );
 }
