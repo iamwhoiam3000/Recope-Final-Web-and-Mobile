@@ -489,10 +489,20 @@ export default function Login() {
       />
 
       <span>
-        I agree that my pantry ingredients, recipe requests, and AI messages may
-        be processed to provide recipe recommendations. I will not submit
-        sensitive personal information.
-      </span>
+  I have read and agree to the{" "}
+  <a
+    href="/ai-data-processing"
+    target="_blank"
+    rel="noreferrer"
+    style={{
+      color: GREEN.primary,
+      fontWeight: 600,
+    }}
+  >
+    AI Data Processing Notice
+  </a>
+  .
+</span>
     </label>
   </div>
 )}

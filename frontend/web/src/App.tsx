@@ -17,6 +17,7 @@ import EmailVerified from "./pages/EmailVerified";
 import EmailUpdated from "./pages/EmailUpdated";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AIDataProcessing from "./pages/AIDataProcessing";
 
 function Navbar() {
   const { user, signOut, isAdmin } = useAuth();
@@ -288,6 +289,7 @@ function AppContent() {
         <Route path="/email-updated" element={<EmailUpdated />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/ai-data-processing" element={<AIDataProcessing />} />
 
         {!user ? (
           <>
