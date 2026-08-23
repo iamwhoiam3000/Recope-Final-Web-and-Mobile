@@ -182,17 +182,48 @@ export const createRecipe = async (req: AuthRequest, res: Response) => {
     );
   }
 
-  if (steps?.length) {
-    await supabase.from('steps').insert(
-      steps.map((s: any, index: number) => ({
-        recipe_id: recipe.id,
-        step_number: index + 1,
-        instruction: s.instruction,
-      }))
-    );
-  }
+if (steps?.length) {
+  await supabase.from('steps').insert(
+    steps.map((s: any, index: number) => ({
+      recipe_id: recipe.id,
+      step_number: index + 1,
+      instruction: s.instruction,
+    }))
+  );
+}
 
-  res.status(201).json(recipe);
+// Fetch the saved ingredients so the newly created recipe
+// has the same structure as a recipe loaded through getRecipe()
+const { data: savedIngredients, error: ingredientsError } = await supabase
+  .from('ingredients')
+  .select('*')
+  .eq('recipe_id', recipe.id);
+
+if (ingredientsError) {
+  return res.status(500).json({
+    error: 'Recipe was created, but its ingredients could not be loaded.',
+  });
+}
+
+// Fetch the saved steps
+const { data: savedSteps, error: stepsError } = await supabase
+  .from('steps')
+  .select('*')
+  .eq('recipe_id', recipe.id)
+  .order('step_number');
+
+if (stepsError) {
+  return res.status(500).json({
+    error: 'Recipe was created, but its steps could not be loaded.',
+  });
+}
+
+// Return a complete recipe object
+return res.status(201).json({
+  ...recipe,
+  ingredients: savedIngredients || [],
+  steps: savedSteps || [],
+});
 };
 
 // =========================
