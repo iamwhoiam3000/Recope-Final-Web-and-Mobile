@@ -3,6 +3,11 @@ import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { AuthRequest } from '../middleware/auth';
 
+console.log(
+  "GROQ_API_KEY configured:",
+  Boolean(process.env.GROQ_API_KEY)
+);
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY!,
 });

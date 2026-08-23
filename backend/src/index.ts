@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import recipeRoutes from './routes/recipes';
 import profileRoutes from './routes/profile';
 import pantryRoutes from './routes/pantry';
@@ -8,8 +8,6 @@ import aiRoutes from './routes/ai';
 import chatRoutes from './routes/chat';
 import adminRoutes from './routes/admin';
 import favoriteRoutes from "./routes/favorites";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
