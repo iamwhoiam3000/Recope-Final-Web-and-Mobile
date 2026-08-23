@@ -324,41 +324,42 @@ Rules:
   try {
     const completion = await groq.chat.completions.create({
   model: "openai/gpt-oss-20b",
-  messages: [{ role: "user", content: prompt }],
-  temperature: 0.2,
+  messages: [
+    {
+      role: "system",
+      content:
+        "You are a nutrition estimation API. Always return one valid JSON object only. Do not use markdown, code blocks, or explanatory text.",
+    },
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+  temperature: 0.1,
   max_tokens: 500,
   response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "nutrition_response",
-      strict: true,
-      schema: {
-        type: "object",
-        properties: {
-          calories: { type: "number" },
-          protein: { type: "number" },
-          fat: { type: "number" },
-          carbohydrates: { type: "number" },
-        },
-        required: [
-          "calories",
-          "protein",
-          "fat",
-          "carbohydrates",
-        ],
-        additionalProperties: false,
-      },
-    },
+    type: "json_object",
   },
 });
 
     const text = completion.choices[0]?.message?.content;
 
-if (!text) {
+if (!text || !text.trim()) {
   throw new Error("Groq returned an empty nutrition response");
 }
 
+console.log("Nutrition Groq response:", text);
+
 const parsed = JSON.parse(text);
+
+if (
+  typeof parsed.calories !== "number" ||
+  typeof parsed.protein !== "number" ||
+  typeof parsed.fat !== "number" ||
+  typeof parsed.carbohydrates !== "number"
+) {
+  throw new Error("Groq returned an invalid nutrition response");
+}
 
     res.json({
       calories: Number(parsed.calories || 0),
