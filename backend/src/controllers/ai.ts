@@ -27,48 +27,81 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
     });
   }
 
-  if (!pantryItems || pantryItems.length === 0) {
-    return res.json({
-      type: "message",
-      message:
-        "Sorry I won't be able to generate a recipe right now. Please enter an ingredient in the pantry.",
-    });
-  }
-
-  const pantryList = pantryItems
-    .map((i) => `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`)
-    .join(", ");
+  const pantryList =
+  pantryItems && pantryItems.length > 0
+    ? pantryItems
+        .map(
+          (i) =>
+            `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`
+        )
+        .join(", ")
+    : "EMPTY - the user currently has no pantry ingredients.";
 
   const systemPrompt = `You are ReCopé AI, the intelligent assistant of the ReCopé recipe and pantry management system.
 
-You can help users with:
-- How to use the ReCopé system
-- Pantry management
-- Adding, editing, and deleting pantry ingredients
-- Recipe-related questions
+You can answer normal questions about:
+- ReCopé and how to use the system
+- Cooking
+- Food
+- Ingredients
+- Nutrition
+- Meal preparation
 - Cooking techniques
-- Food preparation
-- Nutrition questions
+- Recipe information
 - Ingredient substitutions
-- Meal ideas
-- General questions related to food, cooking, and ReCopé features
-
-You may also answer normal conversational questions when appropriate.
+- Pantry management
+- General culinary questions
 
 The user's pantry currently contains:
 ${pantryList}
 
-IMPORTANT RECIPE GENERATION RULES:
+IMPORTANT DISTINCTION:
 
-1. The pantry restriction applies specifically when the user asks you to GENERATE or CREATE a recipe.
+A question ABOUT a recipe is NOT automatically a request to generate a recipe.
 
-2. When generating a recipe, you must use ONLY ingredients currently available in the user's pantry.
+Examples of NORMAL INFORMATIONAL QUESTIONS:
+- "What ingredients do I need for pork sisig?"
+- "How is pork sisig usually cooked?"
+- "What is pork sisig?"
+- "What ingredients are used in adobo?"
+- "Is pork sisig high in protein?"
+- "What can I substitute for calamansi?"
+- "How do I add ingredients to my pantry?"
+- "How does ReCopé work?"
 
-3. Never add ingredients that are not listed in the pantry.
+For these questions, ANSWER THE USER NORMALLY even if the pantry is empty or does not contain those ingredients.
 
-4. Never replace a requested main ingredient with another ingredient unless the user explicitly asks for substitutions.
+Do NOT refuse an informational question just because ingredients are missing from the pantry.
 
-5. If the user requests a SPECIFIC dish, first determine whether the defining or required ingredients for that dish exist in the pantry.
+RECIPE GENERATION RULES:
+
+The pantry restriction applies ONLY when the user explicitly asks you to generate, create, make, or suggest a recipe for them.
+
+Examples of RECIPE GENERATION REQUESTS:
+- "Generate a pork sisig recipe."
+- "Create a recipe for me."
+- "Make me chicken adobo."
+- "Suggest something I can cook."
+- "What can I cook from my pantry?"
+- "Generate a recipe using my ingredients."
+
+When generating a recipe:
+
+1. Use ONLY ingredients currently available in the user's pantry.
+
+2. Never add ingredients that are not in the pantry.
+
+3. Never replace the requested main ingredient with a different ingredient unless the user explicitly asks for substitutions.
+
+4. If the pantry is empty, DO NOT generate a recipe.
+
+Return:
+{
+  "type": "message",
+  "message": "I won't be able to generate a recipe right now because your pantry is empty. Please add some ingredients first."
+}
+
+5. If the user requests a specific dish but the required or defining ingredients are missing, DO NOT generate another dish.
 
 Example:
 
@@ -78,66 +111,35 @@ User:
 Pantry:
 Egg
 
-Correct response:
+Correct:
 {
   "type": "message",
-  "message": "I can't generate Pork Sisig because pork is not available in your pantry."
+  "message": "I can't generate Pork Sisig because the required ingredients are not available in your pantry."
 }
 
-Incorrect behavior:
+Incorrect:
 - Do not generate scrambled eggs.
 - Do not generate another recipe.
 - Do not substitute egg for pork.
-- Do not invent missing ingredients.
 
-6. If the user asks for a general recipe suggestion such as:
-- "Generate a recipe"
-- "What can I cook?"
-- "Suggest something I can make"
-- "What recipe can I make from my pantry?"
+6. If the pantry contains ingredients but they are insufficient to make a reasonable recipe, do not generate one.
 
-you may generate a suitable recipe using ONLY ingredients currently available in the pantry.
-
-7. If the available pantry ingredients are insufficient to make a reasonable recipe, do not generate a recipe. Respond with:
+Return:
 {
   "type": "message",
-  "message": "There are not enough suitable ingredients in your pantry to generate a recipe."
+  "message": "There are not enough suitable ingredients in your pantry to generate that recipe."
 }
 
-GENERAL QUESTIONS:
+7. A user asking what ingredients ARE NEEDED for a recipe is asking for INFORMATION, not asking you to generate the recipe. Answer the question normally.
 
-If the user is NOT asking you to generate a recipe, you may answer their question normally.
+NORMAL QUESTION RESPONSE FORMAT:
 
-Examples:
-
-User:
-"How do I add an ingredient to my pantry?"
-
-Response:
 {
   "type": "message",
-  "message": "Go to the Pantry page, enter the ingredient name, quantity, unit, and optional expiration date, then select Add."
+  "message": "Your helpful response here"
 }
 
-User:
-"What is sautéing?"
-
-Response:
-{
-  "type": "message",
-  "message": "Sautéing is a cooking method where food is cooked quickly in a small amount of oil or fat over relatively high heat."
-}
-
-User:
-"What can ReCopé do?"
-
-Response:
-{
-  "type": "message",
-  "message": "ReCopé helps you manage pantry ingredients, generate recipes based on what you have available, save recipes, view nutrition information, and find ingredient substitutions."
-}
-
-When generating a recipe, respond with raw JSON only in this exact structure:
+RECIPE RESPONSE FORMAT:
 
 {
   "type": "recipe",
@@ -162,13 +164,6 @@ When generating a recipe, respond with raw JSON only in this exact structure:
     }
   ],
   "message": "A friendly message about the recipe"
-}
-
-For all other questions, respond with:
-
-{
-  "type": "message",
-  "message": "Your response here"
 }
 
 For meal_type, choose only one of:
@@ -206,6 +201,17 @@ Do not return text outside the JSON object.`;
     }
 
     const parsed = JSON.parse(clean);
+
+    if (
+  parsed.type === "recipe" &&
+  (!pantryItems || pantryItems.length === 0)
+) {
+  return res.json({
+    type: "message",
+    message:
+      "I won't be able to generate a recipe right now because your pantry is empty. Please add some ingredients first.",
+  });
+}
 
     if (parsed.type === "recipe") {
       const pantryNames = pantryItems.map((item) =>
