@@ -39,15 +39,55 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
     .map((i) => `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`)
     .join(", ");
 
-  const systemPrompt = `You are ReCopé's AI recipe assistant. You generate recipes ONLY from the user's pantry ingredients.
+  const systemPrompt = `You are ReCopé's AI recipe assistant.
 
-The user's pantry currently contains: ${pantryList}
+The user's pantry currently contains:
+${pantryList}
 
-Rules:
-- You must only generate recipes using the user's pantry ingredients.
-- Do not add ingredients that are not listed in the pantry.
-- If the pantry is empty, do not generate a recipe.
-- If the user asks for a recipe that needs ingredients outside the pantry, suggest only what can be made from the pantry.
+STRICT RULES:
+
+- Generate recipes ONLY from ingredients currently available in the user's pantry.
+- Never add ingredients that are not listed in the pantry.
+- Never replace the user's requested main ingredient with another ingredient unless the user explicitly asks for substitutions.
+
+IMPORTANT:
+If the user asks for a SPECIFIC dish or recipe, first determine whether the defining or required ingredients for that dish are available in the pantry.
+
+Example:
+User asks: "Generate me a pork sisig"
+Pantry contains: Egg
+
+Correct response:
+{
+  "type": "message",
+  "message": "I can't generate Pork Sisig because pork is not available in your pantry."
+}
+
+Incorrect behavior:
+- Do not generate scrambled eggs instead.
+- Do not generate a different recipe.
+- Do not substitute egg for pork.
+- Do not automatically suggest another dish.
+
+If the requested dish cannot reasonably be made from the pantry ingredients, respond with:
+{
+  "type": "message",
+  "message": "I can't generate that recipe because the required ingredients are not available in your pantry."
+}
+
+If the user makes a GENERAL request such as:
+- "Generate a recipe"
+- "What can I cook?"
+- "Suggest a recipe"
+- "What can I make with my pantry?"
+
+then you MAY generate a suitable recipe using ONLY the ingredients currently available in the pantry.
+
+If the pantry ingredients are not sufficient to make a reasonable recipe, respond with:
+{
+  "type": "message",
+  "message": "There are not enough suitable ingredients in your pantry to generate a recipe."
+}
 
 When generating a recipe, ALWAYS respond with a JSON object in this exact format with no markdown or code blocks, just raw JSON:
 {
@@ -69,15 +109,20 @@ When generating a recipe, ALWAYS respond with a JSON object in this exact format
   "message": "A friendly message about the recipe"
 }
 
-If the user is just chatting or asking a question, respond with:
+If the user is just chatting, asking a question, or requests a recipe that cannot be made from the pantry, respond with:
 {
   "type": "message",
   "message": "Your response here"
 }
 
-For meal_type, choose only one of: Breakfast, Lunch, Dinner, Snacks, Desserts.
-For cuisine_type, choose only one of: Beef, Chicken, Pork, Seafood, Vegetarian.
-For cook_duration, choose only one of: Quick (under 30min), Medium (30-60min), Long (over 60min).
+For meal_type, choose only one of:
+Breakfast, Lunch, Dinner, Snacks, Desserts.
+
+For cuisine_type, choose only one of:
+Beef, Chicken, Pork, Seafood, Vegetarian.
+
+For cook_duration, choose only one of:
+Quick (under 30min), Medium (30-60min), Long (over 60min).
 
 Always return raw JSON only, no markdown, no code blocks.`;
 
@@ -88,7 +133,7 @@ Always return raw JSON only, no markdown, no code blocks.`;
         { role: "system", content: systemPrompt },
         { role: "user", content: message },
       ],
-      temperature: 0.7,
+      temperature: 0.3,
       max_tokens: 1500,
     });
 
@@ -96,32 +141,78 @@ Always return raw JSON only, no markdown, no code blocks.`;
     console.log("Groq response:", text);
 
     const clean = text.replace(/```json|```/g, "").trim();
+
+    if (!clean) {
+      throw new Error("Groq returned an empty recipe response");
+    }
+
     const parsed = JSON.parse(clean);
 
     if (parsed.type === "recipe") {
-  parsed.meal_type = Array.isArray(parsed.meal_type)
-    ? parsed.meal_type
-    : parsed.meal_type
-      ? [parsed.meal_type]
-      : [];
+      const pantryNames = pantryItems.map((item) =>
+        String(item.name || "").toLowerCase().trim()
+      );
 
-  const totalTime = Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
+      const generatedIngredients = Array.isArray(parsed.ingredients)
+        ? parsed.ingredients
+        : [];
 
-  parsed.cook_duration =
-    totalTime < 30
-      ? "Quick (under 30min)"
-      : totalTime <= 60
-        ? "Medium (30-60min)"
-        : "Long (over 60min)";
-}
+      const unavailableIngredients = generatedIngredients.filter(
+        (ingredient: any) => {
+          const ingredientName = String(ingredient.name || "")
+            .toLowerCase()
+            .trim();
 
-res.json(parsed);
+          if (!ingredientName) {
+            return true;
+          }
+
+          return !pantryNames.some(
+            (pantryName) =>
+              pantryName === ingredientName ||
+              pantryName.includes(ingredientName) ||
+              ingredientName.includes(pantryName)
+          );
+        }
+      );
+
+      if (unavailableIngredients.length > 0) {
+        console.warn(
+          "Rejected AI recipe because ingredients were not in pantry:",
+          unavailableIngredients.map((i: any) => i.name)
+        );
+
+        return res.json({
+          type: "message",
+          message:
+            "I can't generate that recipe because some of the required ingredients are not available in your pantry.",
+        });
+      }
+
+      parsed.meal_type = Array.isArray(parsed.meal_type)
+        ? parsed.meal_type
+        : parsed.meal_type
+          ? [parsed.meal_type]
+          : [];
+
+      const totalTime =
+        Number(parsed.prep_time || 0) + Number(parsed.cook_time || 0);
+
+      parsed.cook_duration =
+        totalTime < 30
+          ? "Quick (under 30min)"
+          : totalTime <= 60
+            ? "Medium (30-60min)"
+            : "Long (over 60min)";
+    }
+
+    return res.json(parsed);
   } catch (error: any) {
     console.error("Groq full error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       type: "message",
       message: "Sorry, I had trouble generating a recipe. Please try again!",
-      error: error.message,
     });
   }
 };
