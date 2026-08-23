@@ -27,17 +27,15 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
     });
   }
 
-  if (!pantryItems || pantryItems.length === 0) {
-    return res.json({
-      type: "message",
-      message:
-        "Sorry I won't be able to generate a recipe right now. Please enter an ingredient in the pantry.",
-    });
-  }
-
-  const pantryList = pantryItems
-    .map((i) => `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`)
-    .join(", ");
+  const pantryList =
+  pantryItems && pantryItems.length > 0
+    ? pantryItems
+        .map(
+          (i) =>
+            `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`
+        )
+        .join(", ")
+    : "EMPTY - the user currently has no ingredients in the pantry.";
 
   const systemPrompt = `You are ReCopé AI, the intelligent assistant of the ReCopé recipe and pantry management system.
 
@@ -61,6 +59,18 @@ ${pantryList}
 IMPORTANT RECIPE GENERATION RULES:
 
 1. The pantry restriction applies specifically when the user asks you to GENERATE or CREATE a recipe.
+
+If the pantry is EMPTY:
+
+- You may still answer normal questions, cooking questions, food questions, nutrition questions, ingredient questions, and questions about how to use ReCopé.
+- Do NOT tell the user to add ingredients unless they are actually asking you to generate, create, make, or suggest a recipe.
+- If the user asks you to generate a recipe while the pantry is empty, do not generate one.
+
+For an empty-pantry recipe request, respond with:
+{
+  "type": "message",
+  "message": "I won't be able to generate a recipe right now because your pantry is empty. Please add some ingredients first."
+}
 
 2. When generating a recipe, you must use ONLY ingredients currently available in the user's pantry.
 
@@ -206,6 +216,17 @@ Do not return text outside the JSON object.`;
     }
 
     const parsed = JSON.parse(clean);
+
+    if (
+  parsed.type === "recipe" &&
+  (!pantryItems || pantryItems.length === 0)
+) {
+  return res.json({
+    type: "message",
+    message:
+      "I won't be able to generate a recipe right now because your pantry is empty. Please add some ingredients first.",
+  });
+}
 
     if (parsed.type === "recipe") {
       const pantryNames = pantryItems.map((item) =>
