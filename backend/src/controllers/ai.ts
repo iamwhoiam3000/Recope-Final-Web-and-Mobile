@@ -317,72 +317,81 @@ Rules:
 
   try {
     const completion = await groq.chat.completions.create({
-  model: "openai/gpt-oss-20b",
-  messages: [
-    {
-      role: "system",
-      content: `You calculate estimated nutrition per serving.
+      model: "openai/gpt-oss-20b",
+      messages: [
+        {
+          role: "system",
+          content: `You estimate nutritional values per serving.
 
-Return ONLY one valid JSON object.
-
-Required format:
+Return ONLY one JSON object with exactly these four numeric fields:
 {
-  "calories": 0,
-  "protein": 0,
-  "fat": 0,
-  "carbohydrates": 0
+  "calories": 250,
+  "protein": 20,
+  "fat": 10,
+  "carbohydrates": 25
 }
 
-All values must be numbers.
-Do not include markdown.
-Do not include code blocks.
-Do not include explanations.`,
-    },
-    {
-      role: "user",
-      content: prompt,
-    },
-  ],
-  temperature: 0.1,
-  max_tokens: 500,
-  response_format: {
-    type: "json_object",
-  },
-});
+Do not use markdown.
+Do not use code blocks.
+Do not add explanations.
+All four values must be numbers.`,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 300,
+    });
 
-const text = completion.choices[0]?.message?.content;
+    const text = completion.choices[0]?.message?.content;
 
-if (!text || !text.trim()) {
-  throw new Error("Groq returned an empty nutrition response");
-}
+    if (!text || !text.trim()) {
+      throw new Error("Groq returned an empty nutrition response");
+    }
 
-console.log("Nutrition Groq response:", text);
+    console.log("Nutrition raw response:", text);
 
-const parsed = JSON.parse(text);
+    const clean = text
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
-const calories = Number(parsed.calories);
-const protein = Number(parsed.protein);
-const fat = Number(parsed.fat);
-const carbohydrates = Number(parsed.carbohydrates);
+    const jsonStart = clean.indexOf("{");
+    const jsonEnd = clean.lastIndexOf("}");
 
-if (
-  !Number.isFinite(calories) ||
-  !Number.isFinite(protein) ||
-  !Number.isFinite(fat) ||
-  !Number.isFinite(carbohydrates)
-) {
-  throw new Error("Groq returned invalid nutrition values");
-}
+    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+      throw new Error("No valid JSON object found in nutrition response");
+    }
 
-return res.json({
-  calories,
-  protein,
-  fat,
-  carbohydrates,
-});
+    const jsonText = clean.slice(jsonStart, jsonEnd + 1);
+    const parsed = JSON.parse(jsonText);
+
+    const calories = Number(parsed.calories);
+    const protein = Number(parsed.protein);
+    const fat = Number(parsed.fat);
+    const carbohydrates = Number(parsed.carbohydrates);
+
+    if (
+      !Number.isFinite(calories) ||
+      !Number.isFinite(protein) ||
+      !Number.isFinite(fat) ||
+      !Number.isFinite(carbohydrates)
+    ) {
+      throw new Error("Groq returned invalid nutrition values");
+    }
+
+    return res.json({
+      calories,
+      protein,
+      fat,
+      carbohydrates,
+    });
   } catch (error: any) {
     console.error("Nutrition AI error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       error: "Failed to generate nutrition values",
       details: error.message,
     });
