@@ -167,15 +167,42 @@ Rules:
 
   try {
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
-      max_tokens: 200,
-    });
+  model: "openai/gpt-oss-20b",
+  messages: [{ role: "user", content: prompt }],
+  temperature: 0.2,
+  max_tokens: 500,
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "nutrition_response",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          calories: { type: "number" },
+          protein: { type: "number" },
+          fat: { type: "number" },
+          carbohydrates: { type: "number" },
+        },
+        required: [
+          "calories",
+          "protein",
+          "fat",
+          "carbohydrates",
+        ],
+        additionalProperties: false,
+      },
+    },
+  },
+});
 
-    const text = completion.choices[0]?.message?.content || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    const text = completion.choices[0]?.message?.content;
+
+if (!text) {
+  throw new Error("Groq returned an empty nutrition response");
+}
+
+const parsed = JSON.parse(text);
 
     res.json({
       calories: Number(parsed.calories || 0),
@@ -234,15 +261,48 @@ Rules:
 
   try {
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.4,
-      max_tokens: 250,
-    });
+  model: "openai/gpt-oss-20b",
+  messages: [{ role: "user", content: prompt }],
+  temperature: 0.4,
+  max_tokens: 800,
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "substitution_response",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          substitutions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                ingredient: { type: "string" },
+                alternatives: {
+                  type: "array",
+                  items: { type: "string" },
+                },
+              },
+              required: ["ingredient", "alternatives"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["substitutions"],
+        additionalProperties: false,
+      },
+    },
+  },
+});
 
-    const text = completion.choices[0]?.message?.content || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    const text = completion.choices[0]?.message?.content;
+
+if (!text) {
+  throw new Error("Groq returned an empty substitution response");
+}
+
+const parsed = JSON.parse(text);
 
     res.json({
       substitutions: Array.isArray(parsed.substitutions)
