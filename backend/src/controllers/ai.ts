@@ -315,63 +315,73 @@ Rules:
 - no explanation
 `;
 
-  try {
+    try {
     const completion = await groq.chat.completions.create({
       model: "openai/gpt-oss-20b",
       messages: [
         {
           role: "system",
-          content: `You estimate nutritional values per serving.
+          content: `You are a nutrition calculator.
 
-Return ONLY one JSON object with exactly these four numeric fields:
-{
-  "calories": 250,
-  "protein": 20,
-  "fat": 10,
-  "carbohydrates": 25
-}
+Estimate nutrition PER SERVING.
 
-Do not use markdown.
-Do not use code blocks.
-Do not add explanations.
-All four values must be numbers.`,
+Return the final answer only in exactly this format:
+
+CALORIES=250;PROTEIN=20;FAT=10;CARBOHYDRATES=25
+
+Rules:
+- Do not explain your reasoning.
+- Do not return JSON.
+- Do not use markdown.
+- Return exactly one final answer line.
+- All values must be numeric.`,
         },
         {
           role: "user",
-          content: prompt,
+          content: `Recipe: ${title || "Untitled Recipe"}
+Servings: ${servings || 1}
+Ingredients: ${ingredientList}`,
         },
       ],
+      reasoning_effort: "low",
+      reasoning_format: "hidden",
       temperature: 0.1,
-      max_tokens: 300,
+      max_completion_tokens: 1000,
     });
 
-    const text = completion.choices[0]?.message?.content;
+    console.log(
+      "Nutrition Groq choice:",
+      JSON.stringify(completion.choices[0], null, 2)
+    );
 
-    if (!text || !text.trim()) {
+    const text = completion.choices[0]?.message?.content?.trim();
+
+    if (!text) {
       throw new Error("Groq returned an empty nutrition response");
     }
 
     console.log("Nutrition raw response:", text);
 
-    const clean = text
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
+    const caloriesMatch = text.match(/CALORIES\s*=\s*([\d.]+)/i);
+    const proteinMatch = text.match(/PROTEIN\s*=\s*([\d.]+)/i);
+    const fatMatch = text.match(/FAT\s*=\s*([\d.]+)/i);
+    const carbohydratesMatch = text.match(
+      /CARBOHYDRATES\s*=\s*([\d.]+)/i
+    );
 
-    const jsonStart = clean.indexOf("{");
-    const jsonEnd = clean.lastIndexOf("}");
-
-    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-      throw new Error("No valid JSON object found in nutrition response");
+    if (
+      !caloriesMatch ||
+      !proteinMatch ||
+      !fatMatch ||
+      !carbohydratesMatch
+    ) {
+      throw new Error(`Unable to parse nutrition response: ${text}`);
     }
 
-    const jsonText = clean.slice(jsonStart, jsonEnd + 1);
-    const parsed = JSON.parse(jsonText);
-
-    const calories = Number(parsed.calories);
-    const protein = Number(parsed.protein);
-    const fat = Number(parsed.fat);
-    const carbohydrates = Number(parsed.carbohydrates);
+    const calories = Number(caloriesMatch[1]);
+    const protein = Number(proteinMatch[1]);
+    const fat = Number(fatMatch[1]);
+    const carbohydrates = Number(carbohydratesMatch[1]);
 
     if (
       !Number.isFinite(calories) ||
