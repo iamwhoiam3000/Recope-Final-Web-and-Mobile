@@ -108,7 +108,18 @@ export const getRecipe = async (req: AuthRequest, res: Response) => {
     .eq('id', id)
     .maybeSingle()
 
-  if (error) return res.status(404).json({ error: 'Recipe not found' });
+  if (error || !recipe) {
+  return res.status(404).json({
+    error: "Recipe not found",
+  });
+}
+
+// Private recipes can only be viewed by their owner.
+if (!recipe.is_public && recipe.user_id !== req.user!.id) {
+  return res.status(404).json({
+    error: "Recipe not found",
+  });
+}
 
   const { data: ingredients } = await supabase
     .from('ingredients')
@@ -138,6 +149,7 @@ export const createRecipe = async (req: AuthRequest, res: Response) => {
     meal_type,
     cuisine_type,
     cook_duration,
+    is_public,
     ingredients,
     steps,
     generate_image,
@@ -166,6 +178,7 @@ export const createRecipe = async (req: AuthRequest, res: Response) => {
       meal_type: mealTypes,
       cuisine_type,
       cook_duration,
+      is_public: typeof is_public === "boolean" ? is_public : true,
       user_id: req.user!.id,
     })
     .select()
@@ -243,6 +256,7 @@ export const updateRecipe = async (req: AuthRequest, res: Response) => {
     meal_type,
     cuisine_type,
     cook_duration,
+    is_public,
     ingredients,
     steps,
   } = req.body;
@@ -265,6 +279,7 @@ export const updateRecipe = async (req: AuthRequest, res: Response) => {
       meal_type: mealTypes,
       cuisine_type,
       cook_duration,
+      ...(typeof is_public === "boolean" ? { is_public } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
