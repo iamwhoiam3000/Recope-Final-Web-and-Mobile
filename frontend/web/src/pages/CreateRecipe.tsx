@@ -26,6 +26,7 @@ export default function CreateRecipe() {
       : [],
       cuisine_type: formData.cuisineType,
       cook_duration: formData.cookDuration,
+      is_public: formData.isPublic,
       ingredients: formData.ingredients.filter((i: any) => i.name),
       steps: formData.steps.filter((s: any) => s.instruction),
     });

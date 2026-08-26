@@ -29,6 +29,7 @@ export default function EditRecipe() {
               : [],
           cuisineType: data.cuisine_type || "",
           cookDuration: data.cook_duration || "",
+          isPublic: data.is_public ?? true,
           ingredients: data.ingredients || [],
           steps: data.steps || [],
         });
@@ -56,6 +57,7 @@ export default function EditRecipe() {
       : [],
       cuisine_type: formData.cuisineType,
       cook_duration: formData.cookDuration,
+      is_public: formData.isPublic,
       ingredients: formData.ingredients.filter((i: any) => i.name),
       steps: formData.steps.filter((s: any) => s.instruction),
     });

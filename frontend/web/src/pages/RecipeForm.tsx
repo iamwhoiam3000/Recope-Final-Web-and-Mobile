@@ -23,6 +23,7 @@ interface RecipeFormData {
   cookDuration: string;
   ingredients: Ingredient[];
   steps: Step[];
+  isPublic: boolean;
 }
 
 interface Props {
@@ -92,6 +93,9 @@ export default function RecipeForm({
   const [cookDuration, setCookDuration] = useState(
     initialData?.cookDuration || "",
   );
+  const [isPublic, setIsPublic] = useState(
+  initialData?.isPublic ?? true
+);
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     initialData?.ingredients || [{ name: "", amount: "", unit: "" }],
   );
@@ -144,6 +148,7 @@ export default function RecipeForm({
       cookDuration,
       ingredients,
       steps,
+      isPublic,
     });
   };
 
@@ -201,6 +206,67 @@ export default function RecipeForm({
             style={{ ...inputStyle, height: 90, resize: "vertical" }}
           />
         </div>
+        <div style={{ marginTop: 16 }}>
+  <label style={labelStyle}>Recipe Visibility</label>
+
+  <div
+    style={{
+      display: "flex",
+      gap: 10,
+    }}
+  >
+    <button
+      type="button"
+      onClick={() => setIsPublic(true)}
+      style={{
+        flex: 1,
+        padding: "12px 14px",
+        borderRadius: 10,
+        border: isPublic
+          ? "1px solid #2d6a4f"
+          : "1px solid #eee",
+        backgroundColor: isPublic ? "#eaf4ef" : "#fff",
+        color: isPublic ? "#2d6a4f" : "#666",
+        fontWeight: isPublic ? 600 : 400,
+        cursor: "pointer",
+      }}
+    >
+      🌐 Public
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setIsPublic(false)}
+      style={{
+        flex: 1,
+        padding: "12px 14px",
+        borderRadius: 10,
+        border: !isPublic
+          ? "1px solid #2d6a4f"
+          : "1px solid #eee",
+        backgroundColor: !isPublic ? "#eaf4ef" : "#fff",
+        color: !isPublic ? "#2d6a4f" : "#666",
+        fontWeight: !isPublic ? 600 : 400,
+        cursor: "pointer",
+      }}
+    >
+      🔒 Only Me
+    </button>
+  </div>
+
+  <p
+    style={{
+      marginTop: 8,
+      marginBottom: 0,
+      fontSize: 12,
+      color: "#888",
+    }}
+  >
+    {isPublic
+      ? "Other ReCopé users can see this recipe."
+      : "Only you can see this recipe."}
+  </p>
+</div>
       </div>
 
       {/* Details */}
