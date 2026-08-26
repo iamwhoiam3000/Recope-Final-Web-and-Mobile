@@ -36,11 +36,18 @@ export const getPantry = async (req: AuthRequest, res: Response) => {
 export const addPantryItem = async (req: AuthRequest, res: Response) => {
   console.log("Add pantry body:", req.body);
 
-  const { name, quantity, unit, expiration_date } = req.body;
+  const { name, quantity, unit, size, expiration_date } = req.body;
 
   const { data, error } = await supabase
     .from('pantry_items')
-    .insert({ name, quantity, unit, expiration_date: expiration_date || null, user_id: req.user!.id })
+    .insert({
+  name,
+  quantity,
+  unit,
+  size: size || null,
+  expiration_date: expiration_date || null,
+  user_id: req.user!.id,
+})
     .select()
     .maybeSingle();
 
@@ -78,11 +85,17 @@ export const deletePantryItem = async (req: AuthRequest, res: Response) => {
 
 export const updatePantryItem = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { name, quantity, unit, expiration_date } = req.body;
+  const { name, quantity, unit, size, expiration_date } = req.body;
 
   const { data, error } = await supabase
     .from('pantry_items')
-    .update({ name, quantity, unit, expiration_date })
+    .update({
+  name,
+  quantity,
+  unit,
+  size: size || null,
+  expiration_date: expiration_date || null,
+})
     .eq('id', id)
     .eq('user_id', req.user!.id)
     .select()

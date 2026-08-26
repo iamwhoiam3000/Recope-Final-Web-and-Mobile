@@ -6,7 +6,8 @@ interface PantryItem {
   name: string;
   quantity: string;
   unit: string;
-  expiration_date?: string | null; // ISO date string
+  size?: string | null;
+  expiration_date?: string | null;
 }
 
 const UNITS = [
@@ -40,6 +41,27 @@ const UNITS = [
   "piece",
   "whole",
 ];
+
+const getSizeOptions = (ingredientName: string): string[] => {
+  const normalized = ingredientName.toLowerCase().trim();
+
+  if (normalized.includes("egg")) {
+    return ["Small", "Medium", "Large", "Extra Large"];
+  }
+
+  if (
+    normalized.includes("onion") ||
+    normalized.includes("tomato") ||
+    normalized.includes("potato") ||
+    normalized.includes("apple") ||
+    normalized.includes("orange") ||
+    normalized.includes("lemon")
+  ) {
+    return ["Small", "Medium", "Large"];
+  }
+
+  return [];
+};
 
 // How many days before expiry to warn the user
 const EXPIRY_WARNING_DAYS = 3;
@@ -140,15 +162,23 @@ export default function Pantry() {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("pcs");
+  const [size, setSize] = useState("");
   const [expiration_date, setexpiration_date] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
-    name: string;
-    quantity: string;
-    unit: string;
-    expiration_date: string;
-  }>({ name: "", quantity: "", unit: "pcs", expiration_date: "" });
+  name: string;
+  quantity: string;
+  unit: string;
+  size: string;
+  expiration_date: string;
+}>({
+  name: "",
+  quantity: "",
+  unit: "pcs",
+  size: "",
+  expiration_date: "",
+});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [dismissedAlert, setDismissedAlert] = useState(false);
 
@@ -176,16 +206,18 @@ export default function Pantry() {
     if (!name) return;
     setAdding(true);
     const data = await api.post("/api/pantry", {
-      name,
-      quantity,
-      unit,
-      expiration_date: expiration_date || null,
-    });
+  name,
+  quantity,
+  unit,
+  size: size || null,
+  expiration_date: expiration_date || null,
+});
     if (!data.error) {
       setItems((prev) => [...prev, data]);
       setName("");
       setQuantity("");
       setUnit("pcs");
+      setSize("");
       setexpiration_date("");
     }
     setAdding(false);
@@ -202,6 +234,7 @@ export default function Pantry() {
       name: item.name,
       quantity: item.quantity || "",
       unit: item.unit || "pcs",
+      size: item.size || "",
       expiration_date: item.expiration_date
         ? new Date(item.expiration_date).toISOString().split("T")[0]
         : "",
@@ -210,7 +243,13 @@ export default function Pantry() {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditForm({ name: "", quantity: "", unit: "pcs", expiration_date: "" });
+    setEditForm({
+  name: "",
+  quantity: "",
+  unit: "pcs",
+  size: "",
+  expiration_date: "",
+});
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -335,7 +374,14 @@ export default function Pantry() {
             <input
               placeholder="Ingredient name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+  const newName = e.target.value;
+  setName(newName);
+
+  if (getSizeOptions(newName).length === 0) {
+    setSize("");
+  }
+}}
               required
               style={inputStyle}
             />
@@ -359,6 +405,34 @@ export default function Pantry() {
               ))}
             </select>
           </div>
+          {getSizeOptions(name).length > 0 && (
+  <div style={{ marginBottom: 10 }}>
+    <label
+      style={{
+        display: "block",
+        fontSize: 13,
+        color: "#888",
+        marginBottom: 6,
+      }}
+    >
+      Size
+    </label>
+
+    <select
+      value={size}
+      onChange={(e) => setSize(e.target.value)}
+      style={{ ...selectStyle, width: "100%" }}
+    >
+      <option value="">Select size (optional)</option>
+
+      {getSizeOptions(name).map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
           <div
             style={{
               display: "grid",
@@ -465,9 +539,18 @@ export default function Pantry() {
                     >
                       <input
                         value={editForm.name}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, name: e.target.value })
-                        }
+                        onChange={(e) => {
+  const newName = e.target.value;
+
+  setEditForm({
+    ...editForm,
+    name: newName,
+    size:
+      getSizeOptions(newName).length > 0
+        ? editForm.size
+        : "",
+  });
+}}
                         style={inputStyle}
                         placeholder="Ingredient name"
                       />
@@ -495,6 +578,39 @@ export default function Pantry() {
                         ))}
                       </select>
                     </div>
+                    {getSizeOptions(editForm.name).length > 0 && (
+  <div style={{ marginBottom: 10 }}>
+    <label
+      style={{
+        display: "block",
+        fontSize: 13,
+        color: "#888",
+        marginBottom: 6,
+      }}
+    >
+      Size
+    </label>
+
+    <select
+      value={editForm.size}
+      onChange={(e) =>
+        setEditForm({
+          ...editForm,
+          size: e.target.value,
+        })
+      }
+      style={{ ...selectStyle, width: "100%" }}
+    >
+      <option value="">Select size (optional)</option>
+
+      {getSizeOptions(editForm.name).map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
                     <div
                       style={{
                         display: "flex",
@@ -621,6 +737,34 @@ export default function Pantry() {
                       <span style={{ fontSize: 15, fontWeight: 500 }}>
                         {item.name}
                       </span>
+                      {item.size && (
+  <span
+    style={{
+      fontSize: 12,
+      color: "#2d6a4f",
+      backgroundColor: "#d8f3dc",
+      padding: "2px 8px",
+      borderRadius: 20,
+      fontWeight: 500,
+    }}
+  >
+    {item.size}
+  </span>
+)}
+                      {item.size && (
+  <span
+    style={{
+      fontSize: 12,
+      color: "#2d6a4f",
+      backgroundColor: "#d8f3dc",
+      padding: "2px 8px",
+      borderRadius: 20,
+      fontWeight: 500,
+    }}
+  >
+    {item.size}
+  </span>
+)}
                       {(item.quantity || item.unit) && (
                         <span
                           style={{
