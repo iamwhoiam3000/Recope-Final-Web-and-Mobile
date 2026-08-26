@@ -330,42 +330,6 @@ useEffect(() => {
         {recipe.title}
       </h3>
 
-      <div style={{ color: "#f59e0b", fontSize: 14, marginBottom: 8 }}>
-  {(() => {
-    const reviews = recipe.reviews || [];
-    const count = reviews.length;
-    const avg =
-      count > 0
-        ? reviews.reduce((sum: number, r: any) => sum + Number(r.rating || 0), 0) / count
-        : 0;
-
-    return `★ ${avg.toFixed(1)} (${count})`;
-  })()}
-</div>
-
-      {/* Rating */}
-      {recipe.avg_rating > 0 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 8,
-          }}
-        >
-          <span style={{ color: "#f59e0b", fontSize: 14 }}>
-            {"★".repeat(Math.round(recipe.avg_rating))}
-            {"☆".repeat(5 - Math.round(recipe.avg_rating))}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b" }}>
-            {Number(recipe.avg_rating).toFixed(1)}
-          </span>
-          <span style={{ fontSize: 12, color: "#999" }}>
-            ({recipe.review_count})
-          </span>
-        </div>
-      )}
-
       {/* Description */}
       <p
         style={{
