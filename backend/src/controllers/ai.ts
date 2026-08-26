@@ -17,7 +17,7 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
 
   const { data: pantryItems, error: pantryError } = await supabase
     .from("pantry_items")
-    .select("name, quantity, unit")
+    .select("name, quantity, unit, size")
     .eq("user_id", req.user!.id);
 
   if (pantryError) {
@@ -30,10 +30,19 @@ export const generateRecipe = async (req: AuthRequest, res: Response) => {
   const pantryList =
   pantryItems && pantryItems.length > 0
     ? pantryItems
-        .map(
-          (i) =>
-            `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit})` : ""}`
-        )
+        .map((i) => {
+          const quantityPart = i.quantity
+            ? `${i.quantity} ${i.unit || ""}`.trim()
+            : "";
+
+          const sizePart = i.size ? i.size : "";
+
+          const details = [quantityPart, sizePart]
+            .filter(Boolean)
+            .join(", ");
+
+          return `${i.name}${details ? ` (${details})` : ""}`;
+        })
         .join(", ")
     : "EMPTY - the user currently has no ingredients in the pantry.";
 
