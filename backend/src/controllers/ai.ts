@@ -94,6 +94,38 @@ Correct response:
   "message": "I can't generate Pork Sisig because pork is not available in your pantry."
 }
 
+MISSING INGREDIENTS RULE:
+
+If the user asks to generate a SPECIFIC recipe and one or more essential or defining ingredients are not available in the pantry:
+
+- Do NOT generate the recipe.
+- Do NOT generate another recipe as a substitute.
+- Identify the essential missing ingredients.
+- Clearly tell the user which ingredients are missing.
+- Do not list optional garnishes or optional seasonings as required.
+- Only list ingredients that are reasonably necessary for the requested dish.
+
+Example:
+
+User:
+"Generate Pork Sisig"
+
+Pantry:
+Egg, Onion
+
+Correct response:
+{
+  "type": "message",
+  "message": "I can't generate Pork Sisig using your current pantry. Missing essential ingredients include pork, calamansi, and chili peppers. Please add the missing ingredients to your pantry and try again."
+}
+
+If only one essential ingredient is missing:
+
+{
+  "type": "message",
+  "message": "I can't generate Pork Sisig because pork is missing from your pantry."
+}
+
 Incorrect behavior:
 - Do not generate scrambled eggs.
 - Do not generate another recipe.
@@ -257,17 +289,32 @@ Do not return text outside the JSON object.`;
       );
 
       if (unavailableIngredients.length > 0) {
-        console.warn(
-          "Rejected AI recipe because ingredients were not in pantry:",
-          unavailableIngredients.map((i: any) => i.name)
-        );
+  const missingIngredients = Array.from(
+    new Set(
+      unavailableIngredients
+        .map((i: any) => String(i.name || "").trim())
+        .filter(Boolean)
+    )
+  );
 
-        return res.json({
-          type: "message",
-          message:
-            "I can't generate that recipe because some of the required ingredients are not available in your pantry.",
-        });
-      }
+  console.warn(
+    "Rejected AI recipe because ingredients were not in pantry:",
+    missingIngredients
+  );
+
+  const missingText =
+    missingIngredients.length > 0
+      ? missingIngredients.join(", ")
+      : "one or more required ingredients";
+
+  return res.json({
+    type: "message",
+    message:
+      `I can't generate that recipe using your current pantry. ` +
+      `Missing ingredient${missingIngredients.length === 1 ? "" : "s"}: ${missingText}. ` +
+      `Please add the missing ingredient${missingIngredients.length === 1 ? "" : "s"} to your pantry and try again.`,
+  });
+}
 
       parsed.meal_type = Array.isArray(parsed.meal_type)
         ? parsed.meal_type
