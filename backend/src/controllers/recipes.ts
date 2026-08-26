@@ -114,8 +114,9 @@ export const getRecipe = async (req: AuthRequest, res: Response) => {
   });
 }
 
-// Private recipes can only be viewed by their owner.
-if (!recipe.is_public && recipe.user_id !== req.user!.id) {
+const currentUserId = req.user?.id;
+
+if (!recipe.is_public && recipe.user_id !== currentUserId) {
   return res.status(404).json({
     error: "Recipe not found",
   });
