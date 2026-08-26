@@ -13,6 +13,9 @@ export default function RecipeChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveVisibility, setSaveVisibility] = useState<"public" | "private">(
+  "private"
+);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -117,6 +120,7 @@ export default function RecipeChat() {
     
   cuisine_type: recipe.cuisine_type || "",
   cook_duration: recipe.cook_duration || "",
+  is_public: saveVisibility === "public",
   ingredients: recipe.ingredients,
   steps: recipe.steps,
   generate_image: true,
@@ -126,7 +130,10 @@ export default function RecipeChat() {
       window.dispatchEvent(new Event("recipes-updated"));
       const savedMsg: Message = {
         role: "assistant",
-        content: `✅ "${recipe.title}" has been saved to your recipes!`,
+        content:
+  saveVisibility === "public"
+    ? `✅ "${recipe.title}" has been saved as Public and can be viewed by other ReCopé users.`
+    : `✅ "${recipe.title}" has been saved as Only Me.`,
       };
       setMessages((prev) => [...prev, savedMsg]);
       await api.post("/api/chat", {
@@ -333,6 +340,53 @@ export default function RecipeChat() {
                           🥘 {msg.recipe.ingredients?.length} ingredients
                         </span>
                       </div>
+                      <div style={{ marginBottom: 10 }}>
+  <label
+    style={{
+      display: "block",
+      fontSize: 12,
+      color: "#666",
+      marginBottom: 5,
+      fontWeight: 600,
+    }}
+  >
+    Recipe Visibility
+  </label>
+
+  <select
+    value={saveVisibility}
+    onChange={(e) =>
+      setSaveVisibility(e.target.value as "public" | "private")
+    }
+    style={{
+      width: "100%",
+      padding: "8px 10px",
+      borderRadius: 8,
+      border: "1px solid #95c9b0",
+      backgroundColor: "#fff",
+      color: "#333",
+      fontSize: 13,
+      marginBottom: 8,
+      cursor: "pointer",
+    }}
+  >
+    <option value="private">🔒 Only Me</option>
+    <option value="public">🌐 Public</option>
+  </select>
+
+  <p
+    style={{
+      margin: 0,
+      marginBottom: 8,
+      fontSize: 11,
+      color: "#777",
+    }}
+  >
+    {saveVisibility === "public"
+      ? "Other ReCopé users will be able to see this recipe."
+      : "Only you will be able to see this recipe."}
+  </p>
+</div>
                       <button
                         onClick={() => handleSaveRecipe(msg.recipe)}
                         disabled={saving}
