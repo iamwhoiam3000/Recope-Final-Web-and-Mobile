@@ -14,12 +14,10 @@ const router = Router();
 
 router.get('/', getRecipes);
 router.get('/my', requireAuth, getMyRecipes);
-router.get('/:id', getRecipe);
-
+router.get('/:id', requireAuth, getRecipe);
 router.post('/', requireAuth, createRecipe);
 router.put('/:id', requireAuth, updateRecipe);
 router.delete('/:id', requireAuth, deleteRecipe);
-
 router.post('/:id/cook', requireAuth, cookRecipe);
 
 export default router;
